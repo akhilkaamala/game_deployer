@@ -386,10 +386,8 @@ export function BackupsManager() {
               const isExpanded = expandedGames.includes(game);
               const filteredList = list.filter(
                 (b) =>
-                  b.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                  b.deploymentVersion
-                    .toLowerCase()
-                    .includes(searchQuery.toLowerCase()),
+                  (b.name?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
+                  (b.deploymentVersion?.toLowerCase() || "").includes(searchQuery.toLowerCase()),
               );
 
               if (searchQuery && filteredList.length === 0) return null;
@@ -458,61 +456,65 @@ export function BackupsManager() {
                               <div className="flex items-center gap-4 flex-1">
                                 <div className="w-1.5 h-1.5 rounded-full bg-primary/40 group-hover/item:bg-primary transition-colors" />
                                 {editingPath === backup.path ? (
-                                  <div className="flex items-center gap-2 flex-1 relative max-w-sm">
-                                    <Input
-                                      value={newName}
-                                      onChange={(e) =>
-                                        setNewName(e.target.value)
-                                      }
-                                      className="h-8 py-1 px-2 text-xs bg-black/40 border-white/10 w-full"
-                                      autoFocus
-                                      disabled={isRenaming}
-                                      onKeyDown={(e) => {
-                                        if (e.key === "Enter")
-                                          handleRename(backup);
-                                        if (e.key === "Escape")
-                                          setEditingPath(null);
-                                      }}
-                                    />
-                                    {isRenaming && (
-                                      <div className="absolute inset-0 bg-black/80 rounded-md flex flex-col items-center justify-center px-2">
-                                        <div className="flex items-center justify-between w-full mb-1">
-                                          <span className="text-[8px] font-black uppercase tracking-tighter text-zinc-400">
-                                            {renameStatus}
-                                          </span>
-                                          <span className="text-[9px] font-black text-primary tabular-nums">
-                                            {Math.round(renameProgress)}%
-                                          </span>
+                                  <div className="flex items-center gap-2 flex-1 max-w-sm">
+                                    <div className="relative flex-1">
+                                      <Input
+                                        value={newName}
+                                        onChange={(e) =>
+                                          setNewName(e.target.value)
+                                        }
+                                        className="h-8 py-1 px-2 text-xs bg-black/40 border-white/10 w-full"
+                                        autoFocus
+                                        disabled={isRenaming}
+                                        onKeyDown={(e) => {
+                                          if (e.key === "Enter")
+                                            handleRename(backup);
+                                          if (e.key === "Escape")
+                                            setEditingPath(null);
+                                        }}
+                                      />
+                                      {isRenaming && (
+                                        <div className="absolute inset-0 bg-black/80 rounded-md flex flex-col items-center justify-center px-2 z-10">
+                                          <div className="flex items-center justify-between w-full mb-1">
+                                            <span className="text-[8px] font-black uppercase tracking-tighter text-zinc-400">
+                                              {renameStatus}
+                                            </span>
+                                            <span className="text-[9px] font-black text-primary tabular-nums">
+                                              {Math.round(renameProgress)}%
+                                            </span>
+                                          </div>
+                                          <div className="w-full h-1 bg-zinc-800 rounded-full overflow-hidden">
+                                            <motion.div
+                                              initial={{ width: 0 }}
+                                              animate={{
+                                                width: `${renameProgress}%`,
+                                              }}
+                                              className="h-full bg-primary"
+                                            />
+                                          </div>
                                         </div>
-                                        <div className="w-full h-1 bg-zinc-800 rounded-full overflow-hidden">
-                                          <motion.div
-                                            initial={{ width: 0 }}
-                                            animate={{
-                                              width: `${renameProgress}%`,
-                                            }}
-                                            className="h-full bg-primary"
-                                          />
-                                        </div>
-                                      </div>
-                                    )}
-                                    <button
-                                      onClick={() => handleRename(backup)}
-                                      disabled={isRenaming}
-                                      className="p-1 text-emerald-400 hover:bg-emerald-400/10 rounded disabled:opacity-50"
-                                    >
-                                      {isRenaming ? (
-                                        <RefreshCcw className="w-4 h-4 animate-spin" />
-                                      ) : (
-                                        <Check className="w-4 h-4" />
                                       )}
-                                    </button>
-                                    <button
-                                      onClick={() => setEditingPath(null)}
-                                      disabled={isRenaming}
-                                      className="p-1 text-red-400 hover:bg-red-400/10 rounded disabled:opacity-50"
-                                    >
-                                      <X className="w-4 h-4" />
-                                    </button>
+                                    </div>
+                                    <div className="flex items-center gap-1 shrink-0">
+                                      <button
+                                        onClick={() => handleRename(backup)}
+                                        disabled={isRenaming}
+                                        className="p-1.5 text-emerald-400 hover:bg-emerald-400/10 rounded-lg transition-colors disabled:opacity-50"
+                                      >
+                                        {isRenaming ? (
+                                          <RefreshCcw className="w-3.5 h-3.5 animate-spin" />
+                                        ) : (
+                                          <Check className="w-3.5 h-3.5" />
+                                        )}
+                                      </button>
+                                      <button
+                                        onClick={() => setEditingPath(null)}
+                                        disabled={isRenaming}
+                                        className="p-1.5 text-red-400 hover:bg-red-400/10 rounded-lg transition-colors disabled:opacity-50"
+                                      >
+                                        <X className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
                                   </div>
                                 ) : (
                                   <div className="flex-1 min-w-0">
@@ -655,10 +657,10 @@ export function BackupsManager() {
                     onClick={confirmDelete}
                     disabled={isDeleting}
                     className={cn(
-                      "w-full transition-all duration-500 py-7 text-base font-bold relative overflow-hidden",
+                      "w-full transition-all duration-500 text-base font-bold relative overflow-hidden",
                       isDeleting
-                        ? "bg-zinc-900 border border-white/5 text-zinc-400"
-                        : "bg-red-600 hover:bg-red-500 text-white border-none shadow-[0_0_20px_rgba(220,38,38,0.2)]",
+                        ? "bg-zinc-900/50 border border-white/5 text-zinc-400 py-4 h-auto"
+                        : "bg-red-600 hover:bg-red-500 text-white border-none shadow-[0_0_20px_rgba(220,38,38,0.2)] py-7 h-16",
                     )}
                   >
                     {isDeleting ? (

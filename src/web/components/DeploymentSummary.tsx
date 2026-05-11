@@ -53,12 +53,12 @@ export function DeploymentSummary({
         <div className="flex items-center justify-between p-4 rounded-xl bg-zinc-900/50 border border-white/5 shadow-inner">
           <div className="flex flex-col gap-1">
             <span className="text-[10px] text-zinc-500 uppercase font-bold">Source</span>
-            <Badge variant={source as any} className="w-fit">{source.toUpperCase()}</Badge>
+            <Badge variant={source as any} className="w-fit">{source?.toUpperCase() || "..."}</Badge>
           </div>
           <ArrowRight className="w-4 h-4 text-zinc-700" />
           <div className="flex flex-col gap-1 items-end">
             <span className="text-[10px] text-zinc-500 uppercase font-bold">Target</span>
-            <Badge variant={target as any} className="w-fit">{target.toUpperCase()}</Badge>
+            <Badge variant={target as any} className="w-fit">{target?.toUpperCase() || "..."}</Badge>
           </div>
         </div>
 

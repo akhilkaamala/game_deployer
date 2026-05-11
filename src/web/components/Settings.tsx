@@ -375,7 +375,7 @@ export function SettingsManager() {
     setModal({
       isOpen: true,
       title: "Remove Key Connection?",
-      description: `Clear the .pem path for ${env.toUpperCase()}?`,
+      description: `Clear the .pem path for ${(env || "").toUpperCase()}?`,
       type: "confirm",
       onConfirm: async () => {
         setModal((prev) => ({ ...prev, isOpen: false }));
@@ -468,7 +468,7 @@ export function SettingsManager() {
         setModal({
           isOpen: true,
           title: "Cleanup Successful",
-          description: `Removed ${data.report?.deletedCount || 0} old backups from ${env.toUpperCase()}.`,
+          description: `Removed ${data.report?.deletedCount || 0} old backups from ${(env || "").toUpperCase()}.`,
           type: "success",
         });
       } else {
@@ -731,7 +731,7 @@ export function SettingsManager() {
                             </span>{" "}
                             For Render/Cloud, set an environment variable named{" "}
                             <code className="text-zinc-200">
-                              SSH_KEY_{env.toUpperCase().replace(/-/g, "_")}
+                              SSH_KEY_{(env || "").toUpperCase().replace(/-/g, "_")}
                             </code>{" "}
                             with your .pem file content. The app will
                             automatically bootstrap it on startup.
@@ -771,7 +771,7 @@ export function SettingsManager() {
                   />
                   {cleaningEnv === env
                     ? "Cleaning..."
-                    : `Cleanup ${env.toUpperCase()}`}
+                    : `Cleanup ${(env || "").toUpperCase()}`}
                 </Button>
               ))}
             </div>
@@ -1031,25 +1031,48 @@ export function SettingsManager() {
       >
         <div className="space-y-4">
           <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5">
-              <div>
-                <p className="text-sm font-medium">API Configuration</p>
-                <p className="text-[11px] text-zinc-500 mt-0.5">
-                  Reset the application to use default production endpoints.
-                </p>
+            <div className="p-4 rounded-xl bg-white/5 border border-white/5 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">API Endpoint</p>
+                  <p className="text-[11px] text-zinc-500 mt-0.5">
+                    Configure the backend server URL.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    localStorage.removeItem("custom_api_url");
+                    window.location.reload();
+                  }}
+                  className="gap-2 border-white/10"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  Reset to Default
+                </Button>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  localStorage.removeItem("custom_api_url");
-                  window.location.reload();
-                }}
-                className="gap-2 border-white/10"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                Reset API
-              </Button>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="e.g. http://10.0.0.231:4173"
+                  defaultValue={localStorage.getItem("custom_api_url") || ""}
+                  id="custom-api-input"
+                  className="bg-black/20 border-white/10 text-xs font-mono h-9"
+                />
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    const val = (document.getElementById("custom-api-input") as HTMLInputElement).value;
+                    if (val) {
+                      localStorage.setItem("custom_api_url", val.trim());
+                      window.location.reload();
+                    }
+                  }}
+                  className="h-9 px-4"
+                >
+                  Apply
+                </Button>
+              </div>
             </div>
 
             <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5">

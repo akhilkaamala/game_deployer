@@ -108,7 +108,7 @@ const ENV_BADGE: Record<string, string> = {
 };
 
 function getEnvColor(name: string) {
-  const lower = name.toLowerCase();
+  const lower = (name || "").toLowerCase();
   for (const key of Object.keys(ENV_COLORS)) {
     if (lower.includes(key)) return ENV_COLORS[key];
   }
@@ -116,7 +116,7 @@ function getEnvColor(name: string) {
 }
 
 function getEnvBadge(name: string) {
-  const lower = name.toLowerCase();
+  const lower = (name || "").toLowerCase();
   for (const key of Object.keys(ENV_BADGE)) {
     if (lower.includes(key)) return ENV_BADGE[key];
   }

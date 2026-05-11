@@ -221,7 +221,7 @@ export function Layout({ children }: LayoutProps) {
             {envStatuses.map((env) => {
               const isChecking = env.status === "checking";
               const isOnline = env.status === "online";
-              const label = env.name.toUpperCase();
+              const label = (env.name || "ENV").toUpperCase();
               return (
                 <div
                   key={env.name}

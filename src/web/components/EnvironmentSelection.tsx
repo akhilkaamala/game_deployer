@@ -63,7 +63,7 @@ export function EnvironmentSelection({
         <div className="flex items-center gap-2">
           <Server className="w-4 h-4 text-zinc-500" />
           <span className="text-xs text-zinc-500">
-            Active Pipeline: {source.toUpperCase()} → {target.toUpperCase()}
+            Active Pipeline: {source?.toUpperCase() || "..."} → {target?.toUpperCase() || "..."}
           </span>
         </div>
       </div>
@@ -86,14 +86,16 @@ export function EnvironmentSelection({
                     : "bg-white/5 border-white/10 hover:border-white/20",
                 )}
               >
-                <span
-                  className={cn(
-                    "text-sm font-medium",
-                    source === env ? "text-blue-400" : "text-zinc-400",
-                  )}
-                >
-                  {env.toUpperCase()}
-                </span>
+                <div className="flex flex-col items-start min-w-0">
+                  <span
+                    className={cn(
+                      "text-sm font-bold truncate",
+                      source === env ? "text-blue-400" : "text-zinc-400",
+                    )}
+                  >
+                    {env?.toUpperCase() || "..."}
+                  </span>
+                </div>
                 <div className="flex flex-col items-end gap-1">
                   <Badge variant={env as any} className="h-4 px-1 text-[10px]">
                     SRC
@@ -146,14 +148,16 @@ export function EnvironmentSelection({
                     isDisabled && "opacity-20 cursor-not-allowed grayscale",
                   )}
                 >
-                  <span
-                    className={cn(
-                      "text-sm font-medium",
-                      target === env ? "text-red-400" : "text-zinc-400",
-                    )}
-                  >
-                    {env.toUpperCase()}
-                  </span>
+                  <div className="flex flex-col items-start min-w-0">
+                    <span
+                      className={cn(
+                        "text-sm font-bold truncate",
+                        target === env ? "text-red-400" : "text-zinc-400",
+                      )}
+                    >
+                      {env?.toUpperCase() || "..."}
+                    </span>
+                  </div>
                   <div className="flex flex-col items-end gap-1">
                     <Badge variant={env as any} className="h-4 px-1 text-[10px]">
                       DST

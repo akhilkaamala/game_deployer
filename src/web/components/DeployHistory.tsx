@@ -107,10 +107,11 @@ export function DeployHistory() {
 
   const filteredHistory = history.filter(entry => {
     const q = searchQuery.toLowerCase();
+    if (!entry.reports || !Array.isArray(entry.reports)) return false;
     return entry.reports.some(r => 
-      r.environment.toLowerCase().includes(q) || 
-      (r.gamePath && r.gamePath.toLowerCase().includes(q)) ||
-      r.deploymentVersion.toLowerCase().includes(q)
+      (r.environment?.toLowerCase() || "").includes(q) || 
+      (r.gamePath?.toLowerCase() || "").includes(q) ||
+      (r.deploymentVersion?.toLowerCase() || "").includes(q)
     );
   });
 
@@ -250,7 +251,7 @@ export function DeployHistory() {
                                 <p className="text-zinc-500 uppercase tracking-tighter mb-1 font-black">Target</p>
                                 <div className="flex items-center gap-1.5 text-zinc-300">
                                   <Server className="w-3 h-3" />
-                                  {report.environment.toUpperCase()}
+                                  {report.environment?.toUpperCase() || "UNKNOWN"}
                                 </div>
                               </div>
                               <div>

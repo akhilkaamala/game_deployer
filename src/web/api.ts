@@ -3,8 +3,9 @@ import type { ConfigResponse, DeployRequest, DeployResponse } from "./types";
 const API_BASE =
   typeof window !== "undefined"
     ? localStorage.getItem("custom_api_url") ||
-      import.meta.env.VITE_API_URL ||
-      ""
+      (window.location.hostname.includes("cloudfront.net") 
+        ? "http://localhost:4173" 
+        : import.meta.env.VITE_API_URL || "")
     : import.meta.env.VITE_API_URL || "";
 
 export function getApiUrl(path: string) {

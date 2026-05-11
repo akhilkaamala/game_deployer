@@ -34,7 +34,7 @@ export function GameSelector({
 
   // Derive category from jsonExt — stays in sync with deployment.config.json
   function getCategoryFromJsonExt(jsonExt: string): string {
-    const lower = jsonExt.toLowerCase();
+    const lower = (jsonExt || "").toLowerCase();
     if (lower.includes("/slot/nordic")) return "SLOT - Nordic";
     if (lower.includes("/slot/pharaoh")) return "SLOT - Pharaoh";
     if (lower.includes("/slot/farm")) return "SLOT - Farm";
@@ -68,7 +68,7 @@ export function GameSelector({
     const result: Record<string, string[]> = {};
     Object.entries(groupedGames).forEach(([category, groupGames]) => {
       const filtered = groupGames.filter((game) =>
-        game.toLowerCase().includes(search.toLowerCase()),
+        (game?.toLowerCase() || "").includes((search || "").toLowerCase()),
       );
       if (filtered.length > 0) result[category] = filtered;
     });

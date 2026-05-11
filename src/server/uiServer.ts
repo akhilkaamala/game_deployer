@@ -114,7 +114,7 @@ function sendJson(
   res.writeHead(statusCode, {
     "Content-Type": "application/json",
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
   });
   res.end(JSON.stringify(payload, null, 2));
@@ -213,7 +213,7 @@ async function handleApi(
   if (req.method === "OPTIONS") {
     res.writeHead(204, {
       "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type",
     });
     res.end();
@@ -493,6 +493,9 @@ async function handleApi(
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
       Connection: "keep-alive",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
     });
     const config = loadConfig({ rootDir, cliRetain: null });
     try {
@@ -541,6 +544,36 @@ async function handleApi(
       `rm -rf ${shSingleQuote(backupPath)}`,
     );
     return sendJson(res, 200, { message: "Backup deleted" });
+  }
+
+  if (req.method === "PUT" && url.pathname === "/api/backups") {
+    const body = await parseBody(req);
+    const { env, oldPath, newName } = body;
+    if (!env || !oldPath || !newName)
+      return sendJson(res, 400, {
+        error: "env, oldPath, and newName are required",
+      });
+
+    const config = loadConfig({ rootDir, cliRetain: null });
+    const server = config.servers?.[env];
+    if (!server) return sendJson(res, 404, { error: "Env not found" });
+
+    // Calculate new path by replacing the filename in the old path
+    const parentDir = oldPath.substring(0, oldPath.lastIndexOf("/"));
+    const newPath = `${parentDir}/${newName.trim()}`;
+
+    const { shSingleQuote } = await import("../utils/ssh");
+    try {
+      await runSsh(
+        { ...server, key: path.resolve(rootDir, server.key) },
+        `mv ${shSingleQuote(oldPath)} ${shSingleQuote(newPath)}`,
+      );
+      return sendJson(res, 200, { message: "Backup renamed", newPath });
+    } catch (err: any) {
+      return sendJson(res, 500, {
+        error: `Failed to rename on server: ${err.message}`,
+      });
+    }
   }
 
   if (req.method === "POST" && url.pathname === "/api/backups") {
@@ -729,13 +762,14 @@ server.on("error", (err: any) => {
     console.error(`Port ${port} is already in use. Retrying in 1s...`);
     setTimeout(() => {
       server.close();
-      server.listen(port);
+      server.listen(port, "0.0.0.0");
     }, 1000);
   } else {
     throw err;
   }
 });
 
-server.listen(port, () => {
+server.listen(port, "0.0.0.0", () => {
   console.log(`Deployment UI available at http://localhost:${port}`);
+  console.log(`Network access: http://10.0.0.231:${port}`);
 });
