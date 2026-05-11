@@ -245,6 +245,7 @@ export function SettingsManager() {
   const [linkedKeys, setLinkedKeys] = useState<Record<string, string>>({});
   const [editingEnv, setEditingEnv] = useState<string | null>(null);
   const [isBrowsing, setIsBrowsing] = useState(false);
+  const [systemInfo, setSystemInfo] = useState<any>(null);
   const [cleaningEnv, setCleaningEnv] = useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -257,6 +258,14 @@ export function SettingsManager() {
       window.removeEventListener("dragover", preventDefault);
       window.removeEventListener("drop", preventDefault);
     };
+  }, []);
+
+  // Load system info
+  useEffect(() => {
+    fetch(getApiUrl("/api/system-health"))
+      .then(r => r.json())
+      .then(data => setSystemInfo(data.server))
+      .catch(() => {});
   }, []);
 
   // Load server settings
@@ -648,24 +657,26 @@ export function SettingsManager() {
                       <div className="flex gap-2">
                         <div className="relative flex-1">
                           <Input
-                            placeholder="e.g. /Users/digientmac/Downloads/dev.pem"
+                            placeholder="e.g. /home/ubuntu/keys/dev.pem"
                             value={keyContent}
                             onChange={(e) => setKeyContent(e.target.value)}
                             className="bg-black/20 border-white/10 text-xs font-mono h-9 pr-24"
                             autoFocus
                           />
-                          <button
-                            onClick={handleBrowse}
-                            disabled={isBrowsing}
-                            className="absolute right-1 top-1 bottom-1 px-2 rounded-md bg-white/5 hover:bg-white/10 border border-white/10 text-[9px] font-bold text-zinc-400 flex items-center gap-1.5 transition-colors disabled:opacity-50"
-                          >
-                            {isBrowsing ? (
-                              <Loader2 className="w-2.5 h-2.5 animate-spin" />
-                            ) : (
-                              <Search className="w-2.5 h-2.5" />
-                            )}
-                            Browse...
-                          </button>
+                          {systemInfo?.platform === "darwin" && (
+                            <button
+                              onClick={handleBrowse}
+                              disabled={isBrowsing}
+                              className="absolute right-1 top-1 bottom-1 px-2 rounded-md bg-white/5 hover:bg-white/10 border border-white/10 text-[9px] font-bold text-zinc-400 flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                            >
+                              {isBrowsing ? (
+                                <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                              ) : (
+                                <Search className="w-2.5 h-2.5" />
+                              )}
+                              Browse...
+                            </button>
+                          )}
                         </div>
                         <input
                           type="file"
@@ -691,22 +702,42 @@ export function SettingsManager() {
                           Cancel
                         </Button>
                       </div>
-                      <div className="flex items-center gap-2 p-2 rounded-lg bg-blue-500/5 border border-blue-500/10">
-                        <div className="p-1 rounded bg-blue-500/10 text-blue-400">
-                          <Info className="w-3 h-3" />
+
+                      {systemInfo?.platform === "darwin" ? (
+                        <div className="flex items-center gap-2 p-2 rounded-lg bg-blue-500/5 border border-blue-500/10">
+                          <div className="p-1 rounded bg-blue-500/10 text-blue-400">
+                            <Info className="w-3 h-3" />
+                          </div>
+                          <p className="text-[9px] text-zinc-400 leading-tight">
+                            <span className="font-bold text-blue-400">
+                              Mac Tip:
+                            </span>{" "}
+                            Drag your .pem file from Finder directly into the
+                            box above to get the{" "}
+                            <span className="text-zinc-200">
+                              Full Absolute Path
+                            </span>{" "}
+                            automatically!
+                          </p>
                         </div>
-                        <p className="text-[9px] text-zinc-400 leading-tight">
-                          <span className="font-bold text-blue-400">
-                            Mac Tip:
-                          </span>{" "}
-                          Drag your .pem file from Finder directly into the box
-                          above to get the{" "}
-                          <span className="text-zinc-200">
-                            Full Absolute Path
-                          </span>{" "}
-                          automatically!
-                        </p>
-                      </div>
+                      ) : (
+                        <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-500/5 border border-amber-500/10">
+                          <div className="p-1 rounded bg-amber-500/10 text-amber-400">
+                            <Shield className="w-3 h-3" />
+                          </div>
+                          <p className="text-[9px] text-zinc-400 leading-tight">
+                            <span className="font-bold text-amber-400">
+                              Cloud Tip:
+                            </span>{" "}
+                            For Render/Cloud, set an environment variable named{" "}
+                            <code className="text-zinc-200">
+                              SSH_KEY_{env.toUpperCase().replace(/-/g, "_")}
+                            </code>{" "}
+                            with your .pem file content. The app will
+                            automatically bootstrap it on startup.
+                          </p>
+                        </div>
+                      )}
                     </>
                     {keyError && (
                       <p className="text-[10px] text-red-400 font-medium">
@@ -723,7 +754,7 @@ export function SettingsManager() {
               Manual Cleanup
             </h4>
             <div className="flex gap-4">
-              {envs.map(env => (
+              {envs.map((env) => (
                 <Button
                   key={env}
                   variant="outline"
@@ -732,13 +763,21 @@ export function SettingsManager() {
                   disabled={cleaningEnv === env}
                   className="flex-1 gap-2 border-white/5 hover:bg-white/5 text-zinc-400"
                 >
-                  <Trash2 className={cn("w-3.5 h-3.5", cleaningEnv === env && "animate-spin")} />
-                  {cleaningEnv === env ? "Cleaning..." : `Cleanup ${env.toUpperCase()}`}
+                  <Trash2
+                    className={cn(
+                      "w-3.5 h-3.5",
+                      cleaningEnv === env && "animate-spin",
+                    )}
+                  />
+                  {cleaningEnv === env
+                    ? "Cleaning..."
+                    : `Cleanup ${env.toUpperCase()}`}
                 </Button>
               ))}
             </div>
             <p className="text-[10px] text-zinc-500 italic">
-              * Automatic cleanup is disabled. Click above to remove backups older than the retention count set above.
+              * Automatic cleanup is disabled. Click above to remove backups
+              older than the retention count set above.
             </p>
           </div>
         </div>
@@ -984,45 +1023,72 @@ export function SettingsManager() {
         </div>
       </Section>
 
-      {/* Server Management */}
+      {/* System Actions */}
       <Section
-        icon={Power}
-        title="Server Management"
-        description="Control the lifecycle of the DevOps Center process"
+        icon={Shield}
+        title="System Actions"
+        description="Critical server management and troubleshooting tools"
       >
-        <div className="flex gap-4">
-          <Button
-            variant="outline"
-            onClick={handleRestartServer}
-            disabled={isRestarting}
-            className="flex-1 gap-2 border-amber-500/20 text-amber-500 hover:bg-amber-500/10"
-          >
-            <RefreshCw className="w-4 h-4" />
-            {isRestarting ? "Restarting..." : "Restart Server"}
-          </Button>
-          <Button
-            variant="outline"
-            onClick={handleShutdownServer}
-            disabled={isShuttingDown}
-            className="flex-1 gap-2 border-red-500/20 text-red-500 hover:bg-red-500/10"
-          >
-            <Power className="w-4 h-4" />
-            {isShuttingDown ? "Shutting down..." : "Shutdown Server"}
-          </Button>
+        <div className="space-y-4">
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5">
+              <div>
+                <p className="text-sm font-medium">API Configuration</p>
+                <p className="text-[11px] text-zinc-500 mt-0.5">
+                  Reset the application to use default production endpoints.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  localStorage.removeItem("custom_api_url");
+                  window.location.reload();
+                }}
+                className="gap-2 border-white/10"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                Reset API
+              </Button>
+            </div>
+
+            <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5">
+              <div>
+                <p className="text-sm font-medium">Server Status</p>
+                <p className="text-[11px] text-zinc-500 mt-0.5">
+                  Restart or shutdown the backend process.
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRestartServer}
+                  disabled={isRestarting}
+                  className="gap-2 border-white/10"
+                >
+                  <RefreshCw
+                    className={cn(
+                      "w-3.5 h-3.5",
+                      isRestarting && "animate-spin",
+                    )}
+                  />
+                  Restart
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleShutdownServer}
+                  disabled={isShuttingDown}
+                  className="gap-2 border-red-500/20 text-red-400 hover:bg-red-500/10"
+                >
+                  <Power className="w-3.5 h-3.5" />
+                  Shutdown
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="mt-4 pt-4 border-t border-white/5">
-          <ToggleRow
-            label="Auto-shutdown on Exit"
-            description="Completely stop the Node.js server when you close this browser tab"
-            value={prefs.autoShutdownOnExit}
-            onChange={(v) => updatePref("autoShutdownOnExit", v)}
-          />
-        </div>
-        <p className="text-[10px] text-zinc-500 mt-2 leading-relaxed">
-          Note: Restarting works best if you are running the server via a
-          process manager like PM2. Shutdown will completely terminate the
-          Node.js process.
-        </p>
       </Section>
 
       {/* About & Export */}
