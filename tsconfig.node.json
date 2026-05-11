@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "outDir": "dist"
+  },
+  "include": [
+    "src/server/**/*",
+    "src/cli/**/*",
+    "src/config/**/*",
+    "src/deployment/**/*",
+    "src/backup/**/*",
+    "src/utils/**/*",
+    "src/index.ts"
+  ]
+}
