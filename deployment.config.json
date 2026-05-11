@@ -1,0 +1,272 @@
+{
+  "paths": {
+    "source": {
+      "qa": "./data/source/qa",
+      "preprod": "./data/source/preprod"
+    },
+    "sourcePath": "/home/blazeagrdev/blzAgrDev_S3client/games/",
+    "target": {
+      "qa": "./data/targets/qa",
+      "preprod": "./data/targets/preprod"
+    },
+    "backupsRoot": "./data/backups"
+  },
+  "servers": {
+    "dev": {
+      "user": "blazeagrdev",
+      "host": "3.1.242.159",
+      "port": null,
+      "key": "/Users/digientmac/Desktop/keys/blazeagrdev.pem",
+      "basePath": "/home/blazeagrdev/blzAgrDev_S3client/games",
+      "jsonRootPath": "/home/blazeagrdev/blzAgrDev_S3client/games/content/locale",
+      "cloudfrontDistribution": null,
+      "backupRoot": "/home/blazeagrdev/blzAgrDev_S3client/games"
+    },
+    "qa": {
+      "user": "blazeagrqa",
+      "host": "18.142.2.196",
+      "port": null,
+      "key": "/Users/digientmac/Desktop/keys/blazeagrqa.pem",
+      "basePath": "/home/blazeagrqa/blazeagr-qa-client",
+      "jsonRootPath": "/home/blazeagrqa/blazeagr-qa-client/content/locale",
+      "cloudfrontDistribution": "E2XV2YWOZQAK35",
+      "backupRoot": "/home/blazeagrqa/blazeagr-qa-client"
+    },
+    "preprod": {
+      "user": "blazeagrclient-s3",
+      "host": "3.73.207.133",
+      "port": 2832,
+      "key": "/Users/digientmac/Desktop/keys/blazeagrclient-s3.pem",
+      "basePath": "/home/blazeagrclient-s3/blazeagrclient-s3",
+      "jsonRootPath": "/home/blazeagrclient-s3/blazeagrclient-s3/content/locale",
+      "cloudfrontDistribution": null,
+      "backupRoot": "/home/blazeagrclient-s3/blazeagrclient-s3"
+    }
+  },
+  "backupRetention": {
+    "qa": 10,
+    "preprod": 10
+  },
+  "gameFolderMap": {
+    "Ancient Guards Of Egypt": {
+      "path": "ancient_guardsofegypt",
+      "jsonExt": "/slot/nordic"
+    },
+    "Aqua Slot": {
+      "path": "aqua_slot",
+      "jsonExt": "/slot/nordic"
+    },
+    "Diamond Squash": {
+      "path": "diamond_squash",
+      "jsonExt": "/slot/nordic"
+    },
+    "Fengshen Returns": {
+      "path": "fengshen_returns",
+      "jsonExt": "/slot/nordic"
+    },
+    "Octoplays": {
+      "path": "octoplays",
+      "jsonExt": "/slot/nordic"
+    },
+    "Rise Of Devils Plus": {
+      "path": "raise_of_devils_plus",
+      "jsonExt": "/slot/nordic"
+    },
+    "Wild Wild Buffalo": {
+      "path": "wild_wild_buffalo",
+      "jsonExt": "/slot/nordic"
+    },
+    "Lucky Dragon": {
+      "path": "lucky_dragon",
+      "jsonExt": "/slot/nordic"
+    },
+    "Doodle Disco Wonderland": {
+      "path": "doodle_disco_wonderland",
+      "jsonExt": "/slot/nordic"
+    },
+    "Wild Wickets": {
+      "path": "wildwickets",
+      "jsonExt": "/slot/nordic"
+    },
+    "Rise Of Devils": {
+      "path": "riseofdevils",
+      "jsonExt": "/slot/nordic"
+    },
+    "Muddy Masters": {
+      "path": "muddymasters",
+      "jsonExt": "/slot/nordic"
+    },
+    "Mayan Mores": {
+      "path": "mayan_mores",
+      "jsonExt": "/slot/pharaoh"
+    },
+    "Glittering Gold": {
+      "path": "glittering_gold",
+      "jsonExt": "/slot/pharaoh"
+    },
+    "Majestic Kingdom": {
+      "path": "majestic_kingdom",
+      "jsonExt": "/slot/pharaoh"
+    },
+    "Jungle Safari": {
+      "path": "junglesafari",
+      "jsonExt": "/slot/pharaoh"
+    },
+    "Forbidden Fortune": {
+      "path": "forbiddenfortune",
+      "jsonExt": "/slot/pharaoh"
+    },
+    "Golden Pharaoh Vault": {
+      "path": "golden_vault",
+      "jsonExt": "/slot/pharaoh"
+    },
+    "The Happy Tent": {
+      "path": "the_happy_tent",
+      "jsonExt": "/slot/farm"
+    },
+    "The Pirate King": {
+      "path": "the_pirate_king",
+      "jsonExt": "/slot/farm"
+    },
+    "Indian Wonders": {
+      "path": "indian_wonders",
+      "jsonExt": "/slot/farm"
+    },
+    "Lost Treasures Of Egypt": {
+      "path": "lost_treasures_of_egypt",
+      "jsonExt": "/slot/farm"
+    },
+    "Hot Chica": {
+      "path": "hotchicka",
+      "jsonExt": "/slot/china"
+    },
+    "Eat Street": {
+      "path": "eatstreet",
+      "jsonExt": "/slot/china"
+    },
+    "Frisky Football": {
+      "path": "friskyfootball",
+      "jsonExt": "/slot/greek"
+    },
+    "Spooky Splash": {
+      "path": "spookysplash",
+      "jsonExt": "/slot/greek"
+    },
+    "K9 Kingdom": {
+      "path": "k9kingdom",
+      "jsonExt": "/slot/buffalo"
+    },
+    "K9 Kingdom XMAS": {
+      "path": "k9kingdom_xmas",
+      "jsonExt": "/slot/buffalo"
+    },
+    "7 Up 7 Down": {
+      "path": "luckyseven",
+      "jsonExt": "/draw/luckyseven"
+    },
+    "Abc Spins": {
+      "path": "abcspin",
+      "jsonExt": "/draw/abcspin"
+    },
+    "Crackerjack": {
+      "path": "triplechance",
+      "jsonExt": "/draw/triplechance"
+    },
+    "Double Chance": {
+      "path": "doublechance",
+      "jsonExt": "/draw/doublechance"
+    },
+    "Megawheel": {
+      "path": "megawheel",
+      "jsonExt": "/draw/megawheel"
+    },
+    "Spin 2 Win Turbo": {
+      "path": "spin2winproturbo",
+      "jsonExt": "/draw/spin2winproturbo"
+    },
+    "Spin N Win": {
+      "path": "spin2win",
+      "jsonExt": "/draw/spinnwin"
+    },
+    "Triple Ball (Bowl of Fortune)": {
+      "path": "colorballpro",
+      "jsonExt": "/draw/colorballpro"
+    },
+    "Triple Dice": {
+      "path": "tripledice",
+      "jsonExt": "/draw/tripledice"
+    },
+    "Wheel Of Victory": {
+      "path": "wovpro",
+      "jsonExt": "/draw/wovpro"
+    },
+    "Zodiac Spin": {
+      "path": "zodiacspin",
+      "jsonExt": "/draw/zodiacspin"
+    },
+    "Andar Bahar": {
+      "path": "abclassicstraight",
+      "jsonExt": "/table/andarbahar"
+    },
+    "Baccarat": {
+      "path": "baccarat",
+      "jsonExt": "/table/baccarat"
+    },
+    "Blackjack": {
+      "path": "blackjack",
+      "jsonExt": "/table/blackjack"
+    },
+    "Dragon vs Tiger": {
+      "path": "dragontiger",
+      "jsonExt": "/table/dragontiger"
+    },
+    "American Roulette": {
+      "path": "americanroulette36",
+      "jsonExt": "/roulette/americanroulette36"
+    },
+    "French Roulette": {
+      "path": "rouletteneighbour",
+      "jsonExt": "/roulette/rouletteneighbour"
+    },
+    "Mini Roulette": {
+      "path": "roulette12",
+      "jsonExt": "/roulette/roulette12"
+    },
+    "European Roulette": {
+      "path": "spin36",
+      "jsonExt": "/roulette/spin36"
+    },
+    "Star Chip Roulette": {
+      "path": "starroulette",
+      "jsonExt": "/roulette/starroulette"
+    },
+    "City Roulette": {
+      "path": "trade-roulette",
+      "jsonExt": "/trading/trading_roulette"
+    },
+    "Trade Crash": {
+      "path": "trade-crash",
+      "jsonExt": "/trading/trading_crash"
+    },
+    "Hilo": {
+      "path": "hilo",
+      "jsonExt": "/trading/trading_hilo"
+    },
+    "City Roulette Xmas": {
+      "path": "trade-roulette-xmas",
+      "jsonExt": "/trading/trading_roulette"
+    },
+    "Trade Crash Xmas": {
+      "path": "trade-crash-xmas",
+      "jsonExt": "/trading/trading_crash"
+    },
+    "Hilo Xmas": {
+      "path": "hilo-xmas",
+      "jsonExt": "/trading/trading_hilo"
+    },
+    "Frog Jump": {
+      "path": "frog_jump",
+      "jsonExt": "/cocos/frog_jump"
+    }
+  }
+}
