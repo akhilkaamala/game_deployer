@@ -16,5 +16,6 @@ export default defineConfig({
   build: {
     outDir: "dist/web",
     emptyOutDir: true,
+    chunkSizeWarningLimit: 1000,
   },
 });
