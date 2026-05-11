@@ -1,4 +1,4 @@
-₹import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   Save,
@@ -263,8 +263,8 @@ export function SettingsManager() {
   // Load system info
   useEffect(() => {
     fetch(getApiUrl("/api/system-health"))
-      .then(r => r.json())
-      .then(data => setSystemInfo(data.server))
+      .then((r) => r.json())
+      .then((data) => setSystemInfo(data.server))
       .catch(() => {});
   }, []);
 
