@@ -4,8 +4,8 @@ const API_BASE =
   typeof window !== "undefined"
     ? localStorage.getItem("custom_api_url") ||
       import.meta.env.VITE_API_URL ||
-      "https://game-deployer.onrender.com"
-    : import.meta.env.VITE_API_URL || "https://game-deployer.onrender.com";
+      ""
+    : import.meta.env.VITE_API_URL || "";
 
 export function getApiUrl(path: string) {
   // Ensure the path starts with /
