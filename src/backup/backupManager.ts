@@ -1,7 +1,7 @@
-const path = require("node:path");
-const { determineCleanupPlan } = require("./retentionManager");
-const logger = require("../utils/logger");
-const { runSsh, spawnSsh, shSingleQuote } = require("../utils/ssh");
+import path from "node:path";
+import { determineCleanupPlan } from "./retentionManager";
+import logger from "../utils/logger";
+import { runSsh, spawnSsh, shSingleQuote } from "../utils/ssh";
 
 function formatBytes(size: number): string {
   const units = ["B", "KB", "MB", "GB", "TB"];
@@ -29,7 +29,7 @@ function getBackupRoot(server: any): string {
   return server.backupRoot || `${server.basePath}/.deployment_backups`;
 }
 
-async function createBackup({
+export async function createBackup({
   rootDir,
   config,
   envName,
@@ -105,7 +105,7 @@ async function createBackup({
   };
 }
 
-async function listBackups({
+export async function listBackups({
   rootDir,
   config,
   envName,
@@ -186,7 +186,7 @@ async function listBackups({
   return backups;
 }
 
-async function streamBackups({
+export async function streamBackups({
   rootDir,
   config,
   envName,
@@ -266,13 +266,13 @@ async function streamBackups({
   );
 }
 
-function findLatestSuccessfulBackup(backups: any[]) {
+export function findLatestSuccessfulBackup(backups: any[]) {
   return (
     backups.find((backup) => backup.deploymentStatus === "successful") || null
   );
 }
 
-async function cleanupBackups({
+export async function cleanupBackups({
   rootDir,
   config,
   envName,
@@ -353,11 +353,3 @@ async function cleanupBackups({
     dryRun: false,
   };
 }
-
-module.exports = {
-  createBackup,
-  listBackups,
-  streamBackups,
-  cleanupBackups,
-  findLatestSuccessfulBackup,
-};

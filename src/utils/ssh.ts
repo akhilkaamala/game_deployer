@@ -1,4 +1,7 @@
-const { execFile, spawn } = require("node:child_process");
+import { execFile, spawn } from "node:child_process";
+import os from "node:os";
+import path from "node:path";
+import fs from "node:fs";
 
 // Global set to track active child processes
 const activeProcesses = new Set<any>();
@@ -18,14 +21,17 @@ function execFilePromise(
         }
         reject(error);
       } else {
-        resolve({ stdout, stderr });
+        resolve({
+          stdout: typeof stdout === "string" ? stdout : stdout.toString(),
+          stderr: typeof stderr === "string" ? stderr : stderr.toString(),
+        });
       }
     });
     activeProcesses.add(child);
   });
 }
 
-function killActiveProcesses() {
+export function killActiveProcesses() {
   const count = activeProcesses.size;
   for (const child of activeProcesses) {
     try {
@@ -54,7 +60,7 @@ function sshTarget(server: ServerConfig): string {
   return `${server.user}@${server.host}`;
 }
 
-async function runSsh(
+export async function runSsh(
   server: ServerConfig,
   command: string,
 ): Promise<{ stdout: string; stderr: string }> {
@@ -73,11 +79,11 @@ async function runSsh(
   return { stdout: stdout.trim(), stderr: stderr.trim() };
 }
 
-function spawnSsh(
+export function spawnSsh(
   server: ServerConfig,
   command: string,
   onLine: (line: string) => void,
-  onError: (errLine: string) => void
+  onError: (errLine: string) => void,
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const args = [
@@ -89,21 +95,21 @@ function spawnSsh(
       sshTarget(server),
       command,
     ];
-    
+
     const child = spawn("ssh", args);
     activeProcesses.add(child);
 
     let stdoutBuf = "";
     let stderrBuf = "";
 
-    child.stdout.on("data", (chunk: Buffer) => {
+    child.stdout.on("data", (chunk: any) => {
       stdoutBuf += chunk.toString();
       const lines = stdoutBuf.split("\n");
       stdoutBuf = lines.pop() || "";
       for (const line of lines) onLine(line);
     });
 
-    child.stderr.on("data", (chunk: Buffer) => {
+    child.stderr.on("data", (chunk: any) => {
       stderrBuf += chunk.toString();
       const lines = stderrBuf.split("\n");
       stderrBuf = lines.pop() || "";
@@ -114,7 +120,7 @@ function spawnSsh(
       activeProcesses.delete(child);
       if (stdoutBuf) onLine(stdoutBuf);
       if (stderrBuf) onError(stderrBuf);
-      
+
       if (code !== 0 && code !== null) {
         reject(new Error("SSH process exited with code " + code));
       } else {
@@ -129,7 +135,7 @@ function spawnSsh(
   });
 }
 
-async function runRsyncToRemote(
+export async function runRsyncToRemote(
   server: ServerConfig,
   localPath: string,
   remotePath: string,
@@ -149,11 +155,11 @@ async function runRsyncToRemote(
   return { stdout: stdout.trim(), stderr: stderr.trim() };
 }
 
-function shSingleQuote(value: unknown): string {
+export function shSingleQuote(value: unknown): string {
   return `'${String(value).replace(/'/g, `'\"'\"'`)}'`;
 }
 
-async function runScpToRemote(
+export async function runScpToRemote(
   server: ServerConfig,
   localFilePath: string,
   remoteFilePath: string,
@@ -173,16 +179,13 @@ async function runScpToRemote(
   return { stdout: stdout.trim(), stderr: stderr.trim() };
 }
 
-async function runRemoteToRemoteRsync(
+export async function runRemoteToRemoteRsync(
   sourceServer: ServerConfig,
   targetServer: ServerConfig,
   sourcePath: string,
   targetPath: string,
   dryRun: boolean = false,
 ): Promise<{ stdout: string; stderr: string }> {
-  const os = require("node:os");
-  const path = require("node:path");
-  const fs = require("node:fs");
   const tempLocalDir = path.join(os.tmpdir(), `deploy_${Date.now()}`);
 
   try {
@@ -217,16 +220,7 @@ async function runRemoteToRemoteRsync(
     return result;
   } finally {
     await fs.promises
-    .rm(tempLocalDir, { recursive: true, force: true })
-    .catch(() => {});
+      .rm(tempLocalDir, { recursive: true, force: true })
+      .catch(() => {});
   }
 }
-
-module.exports = {
-  runSsh,
-  spawnSsh,
-  runRsyncToRemote,
-  runRemoteToRemoteRsync,
-  shSingleQuote,
-  killActiveProcesses,
-};

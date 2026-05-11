@@ -1,7 +1,7 @@
-const fs = require("node:fs");
-const path = require("node:path");
+import fs from "node:fs";
+import path from "node:path";
 
-const SUPPORTED_ENVS = ["dev", "qa", "preprod"];
+export const SUPPORTED_ENVS = ["dev", "qa", "preprod"];
 
 function parseDotEnv(dotEnvPath: string): Record<string, string> {
   if (!fs.existsSync(dotEnvPath)) {
@@ -49,7 +49,7 @@ function resolveRetention(
   return 5;
 }
 
-function loadConfig({ rootDir, cliRetain }: { rootDir: string; cliRetain: number | null }) {
+export function loadConfig({ rootDir, cliRetain }: { rootDir: string; cliRetain: number | null }) {
   const configPath = path.join(rootDir, "deployment.config.json");
   if (!fs.existsSync(configPath)) {
     throw new Error(`Missing config file at ${configPath}`);
@@ -83,9 +83,3 @@ function loadConfig({ rootDir, cliRetain }: { rootDir: string; cliRetain: number
     supportedEnvironments: SUPPORTED_ENVS,
   };
 }
-
-module.exports = {
-  loadConfig,
-  SUPPORTED_ENVS,
-};
-

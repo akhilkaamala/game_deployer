@@ -1,11 +1,11 @@
-const fs = require("node:fs/promises");
-const path = require("node:path");
+import fs from "node:fs/promises";
+import path from "node:path";
 
-async function ensureDir(dirPath: string): Promise<void> {
+export async function ensureDir(dirPath: string): Promise<void> {
   await fs.mkdir(dirPath, { recursive: true });
 }
 
-async function pathExists(targetPath: string): Promise<boolean> {
+export async function pathExists(targetPath: string): Promise<boolean> {
   try {
     await fs.access(targetPath);
     return true;
@@ -14,7 +14,7 @@ async function pathExists(targetPath: string): Promise<boolean> {
   }
 }
 
-function toAbsolutePath(rootDir: string, maybeRelativePath?: string | null): string | null {
+export function toAbsolutePath(rootDir: string, maybeRelativePath?: string | null): string | null {
   if (!maybeRelativePath) {
     return null;
   }
@@ -22,10 +22,3 @@ function toAbsolutePath(rootDir: string, maybeRelativePath?: string | null): str
     ? maybeRelativePath
     : path.resolve(rootDir, maybeRelativePath);
 }
-
-module.exports = {
-  ensureDir,
-  pathExists,
-  toAbsolutePath,
-};
-

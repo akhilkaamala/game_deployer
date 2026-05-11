@@ -1,14 +1,14 @@
-const path = require("node:path");
-const fs = require("node:fs");
-const { createBackup } = require("../backup/backupManager");
-const { pathExists, toAbsolutePath } = require("../utils/fileSystem");
-const {
+import path from "node:path";
+import fs from "node:fs";
+import { createBackup } from "../backup/backupManager";
+import { pathExists, toAbsolutePath } from "../utils/fileSystem";
+import {
   runSsh,
   runRsyncToRemote,
   runRemoteToRemoteRsync,
   shSingleQuote,
-} = require("../utils/ssh");
-const logger = require("../utils/logger");
+} from "../utils/ssh";
+import logger from "../utils/logger";
 
 function deploymentVersion(): string {
   return `v${new Date().toISOString()}`;
@@ -168,7 +168,7 @@ async function runCloudFrontInvalidationIfConfigured(
   }
 }
 
-async function deployEnvironment({
+export async function deployEnvironment({
   rootDir,
   config,
   sourceEnv,
@@ -319,7 +319,3 @@ async function deployEnvironment({
   logger.info(`Deployment successful for ${targetEnv}.`);
   return report;
 }
-
-module.exports = {
-  deployEnvironment,
-};

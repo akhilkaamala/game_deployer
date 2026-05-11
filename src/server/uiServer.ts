@@ -1,39 +1,42 @@
-#!/usr/bin/env node
-const fs = require("node:fs");
-const { exec } = require("node:child_process");
-const fsp = require("node:fs/promises");
-const path = require("node:path");
-const http = require("node:http");
-const { loadConfig, SUPPORTED_ENVS } = require("../config/loadConfig");
-const { deployEnvironment } = require("../deployment/deployService");
-const { runPostDeploymentCleanup } = require("../deployment/cleanupScheduler");
-const { listBackups, streamBackups } = require("../backup/backupManager");
-const { runSsh, killActiveProcesses } = require("../utils/ssh");
-const logger = require("../utils/logger");
-const { logEmitter } = logger;
+import fs from "node:fs";
+import { exec } from "node:child_process";
+import fsp from "node:fs/promises";
+import path from "node:path";
+import http from "node:http";
+import { loadConfig, SUPPORTED_ENVS } from "../config/loadConfig";
+import { deployEnvironment } from "../deployment/deployService";
+import { runPostDeploymentCleanup } from "../deployment/cleanupScheduler";
+import { listBackups, streamBackups } from "../backup/backupManager";
+import { runSsh, killActiveProcesses } from "../utils/ssh";
+import logger, { logEmitter } from "../utils/logger";
 
-// __dirname is either `src/server` (ts) or `dist/server` (compiled).
-// In both cases, project root is two levels up.
-// Determine the project root directory
-let rootDir = path.resolve(__dirname, "..", "..");
-if (!fs.existsSync(path.join(rootDir, "deployment.config.json"))) {
-  // If not found, try the direct parent (for flattened deployments where index.js is in root)
-  const altRoot = path.resolve(__dirname, "..");
-  if (fs.existsSync(path.join(altRoot, "deployment.config.json"))) {
-    rootDir = altRoot;
-  }
+// Determine the project root directory safely
+let rootDir = process.cwd();
+if (typeof __dirname !== "undefined") {
+  rootDir = path.resolve(__dirname, "..", "..");
 }
-// Look for the UI in 'dist/web' or just 'web' (for flattened deployments)
+
+// Fallback check for config file to ensure we found the root
+if (!fs.existsSync(path.join(rootDir, "deployment.config.json"))) {
+  rootDir = process.cwd();
+}
+
+// Look for the UI in 'dist/web' or just 'web'
 let reactDistDir = path.join(rootDir, "dist", "web");
 if (!fs.existsSync(reactDistDir)) {
   reactDistDir = path.join(rootDir, "web");
 }
+
 const port = Number.parseInt(
   process.env.PORT || process.env.UI_PORT || "4173",
   10,
 );
 
-function sendJson(res: any, statusCode: number, payload: unknown): void {
+function sendJson(
+  res: http.ServerResponse,
+  statusCode: number,
+  payload: unknown,
+): void {
   res.writeHead(statusCode, {
     "Content-Type": "application/json",
     "Access-Control-Allow-Origin": "*",
@@ -43,10 +46,10 @@ function sendJson(res: any, statusCode: number, payload: unknown): void {
   res.end(JSON.stringify(payload, null, 2));
 }
 
-function parseBody(req: any): Promise<Record<string, any>> {
+function parseBody(req: http.IncomingMessage): Promise<Record<string, any>> {
   return new Promise((resolve, reject) => {
     let raw = "";
-    req.on("data", (chunk: Buffer) => {
+    req.on("data", (chunk: any) => {
       raw += chunk.toString();
     });
     req.on("end", () => {
@@ -84,7 +87,10 @@ function contentType(filePath: string): string {
   return "text/html; charset=utf-8";
 }
 
-async function serveFile(res: any, filePath: string): Promise<void> {
+async function serveFile(
+  res: http.ServerResponse,
+  filePath: string,
+): Promise<void> {
   const data = await fsp.readFile(filePath);
   res.writeHead(200, { "Content-Type": contentType(filePath) });
   res.end(data);
@@ -101,7 +107,6 @@ async function saveHistory(rootDir: string, reports: any[]) {
     history = [];
   }
 
-  // Add new reports with a summary timestamp
   const newEntry = {
     id: Date.now().toString(),
     timestamp: new Date().toISOString(),
@@ -118,16 +123,19 @@ async function saveHistory(rootDir: string, reports: any[]) {
   };
 
   history.unshift(newEntry);
-  // Keep last 100 entries
   if (history.length > 100) history = history.slice(0, 100);
 
+  const dataDir = path.join(rootDir, "data");
+  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
   fs.writeFileSync(historyPath, JSON.stringify(history, null, 2));
 }
 
-async function handleApi(req: any, res: any): Promise<void> {
-  const url = new URL(req.url, `http://${req.headers.host}`);
+async function handleApi(
+  req: http.IncomingMessage,
+  res: http.ServerResponse,
+): Promise<void> {
+  const url = new URL(req.url || "", `http://${req.headers.host}`);
 
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     res.writeHead(204, {
       "Access-Control-Allow-Origin": "*",
@@ -143,18 +151,14 @@ async function handleApi(req: any, res: any): Promise<void> {
   }
 
   if (req.method === "GET" && url.pathname === "/api/browse-key") {
-    // Only works on macOS
     if (process.platform !== "darwin") {
       return sendJson(res, 400, {
         error: "Native file picker only supported on macOS",
       });
     }
     const command = `osascript -e 'POSIX path of (choose file of type {"pem"} with prompt "Select your SSH Private Key (.pem)")'`;
-    exec(command, (err, stdout, stderr) => {
-      if (err) {
-        // User probably cancelled
-        return sendJson(res, 200, { cancelled: true });
-      }
+    exec(command, (err, stdout) => {
+      if (err) return sendJson(res, 200, { cancelled: true });
       const selectedPath = stdout.trim();
       return sendJson(res, 200, { path: selectedPath });
     });
@@ -166,7 +170,6 @@ async function handleApi(req: any, res: any): Promise<void> {
     const mem = process.memoryUsage();
     const servers = config.servers || {};
 
-    // Check SSH connectivity for each environment in parallel (6s hard timeout per env)
     const SSH_TIMEOUT_MS = 6000;
     const envChecks = await Promise.all(
       Object.entries(servers).map(async ([name, srv]: [string, any]) => {
@@ -209,7 +212,6 @@ async function handleApi(req: any, res: any): Promise<void> {
     });
   }
 
-  // --- Environments CRUD ---
   const configPath = path.join(rootDir, "deployment.config.json");
 
   if (req.method === "GET" && url.pathname === "/api/environments") {
@@ -222,11 +224,7 @@ async function handleApi(req: any, res: any): Promise<void> {
     const { name, ...serverConfig } = body;
     if (!name)
       return sendJson(res, 400, { error: "Environment name is required" });
-    const raw = JSON.parse(
-      fsp.readFileSync
-        ? fs.readFileSync(configPath, "utf-8")
-        : await fsp.readFile(configPath, "utf-8"),
-    );
+    const raw = JSON.parse(fs.readFileSync(configPath, "utf-8"));
     if (raw.servers[name])
       return sendJson(res, 409, {
         error: `Environment '${name}' already exists`,
@@ -245,7 +243,6 @@ async function handleApi(req: any, res: any): Promise<void> {
     const server = raw.servers[name];
     if (!server) return sendJson(res, 404, { error: "Environment not found" });
 
-    // Use the path from config or default to ./keys/name.pem
     let keyPath = server.key;
     if (!keyPath || keyPath.startsWith("./keys/")) {
       const keysDir = path.resolve(rootDir, "keys");
@@ -255,14 +252,10 @@ async function handleApi(req: any, res: any): Promise<void> {
       keyPath = path.resolve(rootDir, keyPath);
     }
 
-    // Ensure directory exists
     const dir = path.dirname(keyPath);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-
-    // Save key content and set permissions to 600 (owner read/write only)
     fs.writeFileSync(keyPath, keyContent, { mode: 0o600 });
 
-    // Update config if it was empty
     if (!server.key) {
       server.key = `./keys/${name}.pem`;
       fs.writeFileSync(configPath, JSON.stringify(raw, null, 2));
@@ -304,7 +297,6 @@ async function handleApi(req: any, res: any): Promise<void> {
     return sendJson(res, 200, { message: `Environment '${envName}' deleted` });
   }
 
-  // --- Games CRUD ---
   if (req.method === "GET" && url.pathname === "/api/games") {
     const raw = JSON.parse(fs.readFileSync(configPath, "utf-8"));
     return sendJson(res, 200, raw.gameFolderMap || {});
@@ -363,7 +355,6 @@ async function handleApi(req: any, res: any): Promise<void> {
     return sendJson(res, 200, { message: `Game '${gameName}' deleted` });
   }
 
-  // --- Settings CRUD ---
   if (req.method === "GET" && url.pathname === "/api/settings") {
     const raw = JSON.parse(fs.readFileSync(configPath, "utf-8"));
     return sendJson(res, 200, {
@@ -376,16 +367,14 @@ async function handleApi(req: any, res: any): Promise<void> {
   if (req.method === "PUT" && url.pathname === "/api/settings") {
     const body = await parseBody(req);
     const raw = JSON.parse(fs.readFileSync(configPath, "utf-8"));
-    if (body.backupRetention !== undefined) {
+    if (body.backupRetention !== undefined)
       raw.backupRetention = { ...raw.backupRetention, ...body.backupRetention };
-    }
     if (body.sourcePath !== undefined) {
       if (!raw.paths) raw.paths = {};
       raw.paths.sourcePath = body.sourcePath;
     }
-    if (body.uiSettings !== undefined) {
+    if (body.uiSettings !== undefined)
       raw.uiSettings = { ...(raw.uiSettings || {}), ...body.uiSettings };
-    }
     fs.writeFileSync(configPath, JSON.stringify(raw, null, 2));
     return sendJson(res, 200, { message: "Settings saved" });
   }
@@ -415,9 +404,8 @@ async function handleApi(req: any, res: any): Promise<void> {
 
   if (req.method === "GET" && url.pathname === "/api/backups") {
     const envName = url.searchParams.get("env");
-    if (!envName || !SUPPORTED_ENVS.includes(envName)) {
+    if (!envName || !SUPPORTED_ENVS.includes(envName))
       return sendJson(res, 400, { error: "Invalid env." });
-    }
     const config = loadConfig({ rootDir, cliRetain: null });
     const backups = await listBackups({ rootDir, config, envName });
     return sendJson(res, 200, { env: envName, backups });
@@ -425,26 +413,21 @@ async function handleApi(req: any, res: any): Promise<void> {
 
   if (req.method === "GET" && url.pathname === "/api/backups/stream") {
     const envName = url.searchParams.get("env");
-    if (!envName || !SUPPORTED_ENVS.includes(envName)) {
+    if (!envName || !SUPPORTED_ENVS.includes(envName))
       return sendJson(res, 400, { error: "Invalid env." });
-    }
-
     res.writeHead(200, {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
       Connection: "keep-alive",
     });
-
     const config = loadConfig({ rootDir, cliRetain: null });
-
     try {
       await streamBackups({
         rootDir,
         config,
         envName,
-        onBackup: (backup: any) => {
-          res.write(`data: ${JSON.stringify(backup)}\n\n`);
-        },
+        onBackup: (backup: any) =>
+          res.write(`data: ${JSON.stringify(backup)}\n\n`),
       });
       res.write("event: end\ndata: {}\n\n");
     } catch (err: any) {
@@ -473,14 +456,12 @@ async function handleApi(req: any, res: any): Promise<void> {
   if (req.method === "DELETE" && url.pathname === "/api/backups") {
     const body = await parseBody(req);
     const { env, path: backupPath } = body;
-    if (!env || !backupPath) {
+    if (!env || !backupPath)
       return sendJson(res, 400, { error: "env and path are required" });
-    }
     const config = loadConfig({ rootDir, cliRetain: null });
-    const { runSsh, shSingleQuote } = require("../utils/ssh");
     const server = config.servers?.[env];
     if (!server) return sendJson(res, 404, { error: "Env not found" });
-
+    const { shSingleQuote } = await import("../utils/ssh");
     await runSsh(
       { ...server, key: path.resolve(rootDir, server.key) },
       `rm -rf ${shSingleQuote(backupPath)}`,
@@ -488,40 +469,12 @@ async function handleApi(req: any, res: any): Promise<void> {
     return sendJson(res, 200, { message: "Backup deleted" });
   }
 
-  if (req.method === "PUT" && url.pathname === "/api/backups") {
-    const body = await parseBody(req);
-    const { env, oldPath, newName } = body;
-
-    if (!env || !oldPath || !newName) {
-      return sendJson(res, 400, {
-        error: "env, oldPath and newName are required",
-      });
-    }
-
-    const config = loadConfig({ rootDir, cliRetain: null });
-    const { runSsh, shSingleQuote } = require("../utils/ssh");
-    const server = config.servers?.[env];
-    if (!server) return sendJson(res, 404, { error: "Env not found" });
-
-    // The new path should be in the same parent directory
-    const parentDir = path.dirname(oldPath);
-    const newPath = path.join(parentDir, newName);
-
-    await runSsh(
-      { ...server, key: path.resolve(rootDir, server.key) },
-      `mv ${shSingleQuote(oldPath)} ${shSingleQuote(newPath)}`,
-    );
-
-    return sendJson(res, 200, { message: "Backup renamed" });
-  }
-
   if (req.method === "POST" && url.pathname === "/api/backups") {
     const body = await parseBody(req);
     const { env } = body;
-    if (!env || !SUPPORTED_ENVS.includes(env)) {
+    if (!env || !SUPPORTED_ENVS.includes(env))
       return sendJson(res, 400, { error: "Invalid env" });
-    }
-    const { createBackup } = require("../backup/backupManager");
+    const { createBackup } = await import("../backup/backupManager");
     const config = loadConfig({ rootDir, cliRetain: null });
     const report = await createBackup({
       rootDir,
@@ -533,24 +486,6 @@ async function handleApi(req: any, res: any): Promise<void> {
     return sendJson(res, 200, { message: "Backup created", report });
   }
 
-  if (req.method === "POST" && url.pathname === "/api/backups/cleanup") {
-    const body = await parseBody(req);
-    const { env } = body;
-    if (!env || !SUPPORTED_ENVS.includes(env)) {
-      return sendJson(res, 400, { error: "Invalid env" });
-    }
-    const config = loadConfig({ rootDir, cliRetain: null });
-    const report = await runPostDeploymentCleanup({
-      rootDir,
-      config,
-      envName: env,
-      deploymentStatus: "success",
-      cliRetain: null,
-      dryRun: false,
-    });
-    return sendJson(res, 200, { message: "Cleanup completed", report });
-  }
-
   if (req.method === "GET" && url.pathname === "/api/logs") {
     res.writeHead(200, {
       "Content-Type": "text/event-stream",
@@ -558,16 +493,9 @@ async function handleApi(req: any, res: any): Promise<void> {
       Connection: "keep-alive",
       "Access-Control-Allow-Origin": "*",
     });
-
-    const onLog = (data: any) => {
-      res.write(`data: ${JSON.stringify(data)}\n\n`);
-    };
-
+    const onLog = (data: any) => res.write(`data: ${JSON.stringify(data)}\n\n`);
     logEmitter.on("log", onLog);
-
-    req.on("close", () => {
-      logEmitter.off("log", onLog);
-    });
+    req.on("close", () => logEmitter.off("log", onLog));
     return;
   }
 
@@ -581,20 +509,16 @@ async function handleApi(req: any, res: any): Promise<void> {
     const skipGameBackup = Boolean(body.skipGameBackup);
     const skipJsonBackup = Boolean(body.skipJsonBackup);
 
-    if (!SUPPORTED_ENVS.includes(sourceEnv)) {
+    if (!SUPPORTED_ENVS.includes(sourceEnv))
       return sendJson(res, 400, { error: `Invalid source env: ${sourceEnv}` });
-    }
-    if (!SUPPORTED_ENVS.includes(targetEnv)) {
+    if (!SUPPORTED_ENVS.includes(targetEnv))
       return sendJson(res, 400, { error: `Invalid target env: ${targetEnv}` });
-    }
 
     const config = loadConfig({ rootDir, cliRetain });
     const gamePaths = gamePath
       ? gamePath.split(",").map((s: string) => s.trim())
       : [null];
-
     const deploymentReports = [];
-    let lastStatus = "success";
     const stats = [];
 
     for (const singleGamePath of gamePaths) {
@@ -612,10 +536,7 @@ async function handleApi(req: any, res: any): Promise<void> {
           dryRun,
         });
         deploymentReports.push(report);
-        if (report.status !== "success") {
-          lastStatus = "failed";
-          currentGameStatus = "FAILED";
-        }
+        if (report.status !== "success") currentGameStatus = "FAILED";
       } catch (error: any) {
         logger.error(
           `Deployment failed for ${singleGamePath || "Core"}: ${error.message}`,
@@ -625,7 +546,6 @@ async function handleApi(req: any, res: any): Promise<void> {
           status: "failed",
           error: error.message,
         });
-        lastStatus = "failed";
         currentGameStatus = "FAILED";
       } finally {
         const gameEnd = Date.now();
@@ -634,7 +554,6 @@ async function handleApi(req: any, res: any): Promise<void> {
         const seconds = (durationSeconds % 60).toFixed(1);
         const durationStr =
           minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
-
         stats.push({
           name: singleGamePath || "Core Files",
           duration: durationStr,
@@ -643,24 +562,9 @@ async function handleApi(req: any, res: any): Promise<void> {
       }
     }
 
-    // --- AUTO CLEANUP DISABLED AS REQUESTED ---
-    // const cleanupReport = await runPostDeploymentCleanup({
-    //   rootDir,
-    //   config,
-    //   envName: targetEnv,
-    //   deploymentStatus: lastStatus,
-    //   cliRetain,
-    //   dryRun,
-    // });
-    const cleanupReport = null;
-
-    // Save to history
     await saveHistory(rootDir, deploymentReports);
-
     if (stats.length > 0) {
-      logger.info(`\n${"=".repeat(40)}`);
-      logger.info(`DEPLOYMENT SUMMARY`);
-      logger.info(`${"=".repeat(40)}`);
+      logger.info(`\n${"=".repeat(40)}\nDEPLOYMENT SUMMARY\n${"=".repeat(40)}`);
       for (const s of stats) {
         const statusStr = s.status === "FAILED" ? "❌ FAILED" : "✅ SUCCESS";
         logger.info(
@@ -675,7 +579,7 @@ async function handleApi(req: any, res: any): Promise<void> {
         deploymentReports.length === 1
           ? deploymentReports[0]
           : deploymentReports,
-      cleanup: cleanupReport,
+      cleanup: null,
     });
   }
 
@@ -690,7 +594,7 @@ async function handleApi(req: any, res: any): Promise<void> {
   if (req.method === "POST" && url.pathname === "/api/restart") {
     logger.info("Server restart requested via UI...");
     sendJson(res, 200, { message: "Server is restarting..." });
-    setTimeout(() => process.exit(0), 1000); // Exit and let PM2/systemd restart
+    setTimeout(() => process.exit(0), 1000);
     return;
   }
 
@@ -705,11 +609,9 @@ async function handleApi(req: any, res: any): Promise<void> {
   return sendJson(res, 404, { error: "Not found" });
 }
 
-const server = http.createServer(async (req: any, res: any) => {
+const server = http.createServer(async (req, res) => {
   try {
-    if (req.url.startsWith("/api/")) {
-      return await handleApi(req, res);
-    }
+    if (req.url?.startsWith("/api/")) return await handleApi(req, res);
 
     if (!fs.existsSync(reactDistDir)) {
       res.writeHead(404);
@@ -718,14 +620,13 @@ const server = http.createServer(async (req: any, res: any) => {
       );
     }
 
-    const url = new URL(req.url, `http://${req.headers.host}`);
+    const url = new URL(req.url || "", `http://${req.headers.host}`);
     const requestPath = decodeURIComponent(url.pathname);
     const rawPath = requestPath === "/" ? "/index.html" : requestPath;
     const requestedFile = path.join(reactDistDir, rawPath.replace(/^\/+/, ""));
     const normalizedRequested = path.normalize(requestedFile);
     const normalizedRoot = path.normalize(reactDistDir);
 
-    // Prevent path traversal outside web root.
     if (!normalizedRequested.startsWith(normalizedRoot)) {
       res.writeHead(403);
       return res.end("Forbidden");
@@ -738,7 +639,6 @@ const server = http.createServer(async (req: any, res: any) => {
       return await serveFile(res, normalizedRequested);
     }
 
-    // SPA fallback.
     const indexPath = path.join(reactDistDir, "index.html");
     if (!fs.existsSync(indexPath)) {
       res.writeHead(404);

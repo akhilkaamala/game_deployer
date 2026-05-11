@@ -1,8 +1,8 @@
-const { cleanupBackups, listBackups } = require("../backup/backupManager");
-const { resolveRetentionCount } = require("../backup/retentionManager");
-const logger = require("../utils/logger");
+import { cleanupBackups, listBackups } from "../backup/backupManager";
+import { resolveRetentionCount } from "../backup/retentionManager";
+import logger from "../utils/logger";
 
-async function runPostDeploymentCleanup({
+export async function runPostDeploymentCleanup({
   rootDir,
   config,
   envName,
@@ -38,8 +38,3 @@ async function runPostDeploymentCleanup({
     retainedBackupsCount: currentBackups.length,
   };
 }
-
-module.exports = {
-  runPostDeploymentCleanup,
-};
-

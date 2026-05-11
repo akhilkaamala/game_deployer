@@ -1,4 +1,4 @@
-function resolveRetentionCount({
+export function resolveRetentionCount({
   config,
   envName,
   cliRetain,
@@ -19,7 +19,7 @@ function sortNewestFirst(backups: any[]): any[] {
   );
 }
 
-function determineCleanupPlan({
+export function determineCleanupPlan({
   backups,
   retentionCount,
   latestSuccessfulBackupPath,
@@ -41,9 +41,3 @@ function determineCleanupPlan({
     protectedBackup,
   };
 }
-
-module.exports = {
-  resolveRetentionCount,
-  determineCleanupPlan,
-};
-

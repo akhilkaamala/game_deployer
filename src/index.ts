@@ -1,6 +1,10 @@
-module.exports = {
-  config: require("./config/loadConfig"),
-  backupManager: require("./backup/backupManager"),
-  retentionManager: require("./backup/retentionManager"),
-};
+import { loadConfig } from "./config/loadConfig";
+import { createBackup, listBackups } from "./backup/backupManager";
+import { determineCleanupPlan } from "./backup/retentionManager";
 
+export {
+  loadConfig,
+  createBackup,
+  listBackups,
+  determineCleanupPlan,
+};
