@@ -27,6 +27,63 @@ if (!fs.existsSync(reactDistDir)) {
   reactDistDir = path.join(rootDir, "web");
 }
 
+// ── SSH Key Bootstrap ──────────────────────────────────────────────────────
+// On cloud deployments (e.g. Render), SSH keys are not on disk.
+// Store each key's content as an env var: SSH_KEY_<ENVNAME> (e.g. SSH_KEY_QA)
+// On startup we write them to keys/<envname>.pem and update deployment.config.json
+// to use the relative path so deployments work correctly.
+(function bootstrapSshKeys() {
+  const configPath = path.join(rootDir, "deployment.config.json");
+  if (!fs.existsSync(configPath)) return;
+
+  let config: any;
+  try {
+    config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+  } catch {
+    return;
+  }
+
+  const keysDir = path.join(rootDir, "keys");
+  let configChanged = false;
+
+  for (const [envName, server] of Object.entries(config.servers || {}) as [string, any][]) {
+    const envVarName = `SSH_KEY_${envName.toUpperCase().replace(/-/g, "_")}`;
+    const keyContent = process.env[envVarName];
+
+    if (keyContent) {
+      // Write the key from environment variable
+      if (!fs.existsSync(keysDir)) fs.mkdirSync(keysDir, { recursive: true });
+      const keyPath = path.join(keysDir, `${envName}.pem`);
+      fs.writeFileSync(keyPath, keyContent.replace(/\\n/g, "\n"), { mode: 0o600 });
+      // Update config to use the new relative path
+      config.servers[envName].key = `./keys/${envName}.pem`;
+      configChanged = true;
+      console.log(`[bootstrap] Wrote SSH key for '${envName}' from env var ${envVarName}`);
+    } else if (server.key && !path.isAbsolute(server.key)) {
+      // Already a relative path — resolve and check it exists
+      const resolved = path.resolve(rootDir, server.key);
+      if (!fs.existsSync(resolved)) {
+        console.warn(`[bootstrap] Warning: key for '${envName}' not found at ${resolved}`);
+      }
+    } else if (server.key && path.isAbsolute(server.key) && !fs.existsSync(server.key)) {
+      // Absolute path from local machine that doesn't exist here — try relative fallback
+      const fallback = path.join(keysDir, `${envName}.pem`);
+      if (fs.existsSync(fallback)) {
+        config.servers[envName].key = `./keys/${envName}.pem`;
+        configChanged = true;
+        console.log(`[bootstrap] Remapped key for '${envName}' to relative fallback`);
+      } else {
+        console.warn(`[bootstrap] Warning: no key available for '${envName}' — SSH will fail`);
+      }
+    }
+  }
+
+  if (configChanged) {
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+  }
+})();
+// ──────────────────────────────────────────────────────────────────────────
+
 const port = Number.parseInt(
   process.env.PORT || process.env.UI_PORT || "4173",
   10,
