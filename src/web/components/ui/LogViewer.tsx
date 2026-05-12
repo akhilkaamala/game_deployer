@@ -203,61 +203,69 @@ export function LogViewer({
                 <div className="w-4 shrink-0" />
               </div>
 
-              {/* Overflow Indicator */}
               <div
                 className={cn(
-                  "absolute right-0 top-0 bottom-0 z-40 pointer-events-none flex items-center pr-2 bg-gradient-to-l from-zinc-950 via-zinc-950/90 to-transparent transition-opacity duration-300",
+                  "absolute -right-2 top-1/2 -translate-y-1/2 z-50 pointer-events-none transition-opacity duration-300",
                   showOverflow ? "opacity-100" : "opacity-0",
                 )}
               >
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1.5">
-                    {Array.from({ length: 5 }).map((_, i) => {
-                      const colors = ["#22d3ee", "#a855f7", "#ec4899"];
-                      const color = colors[i % colors.length];
-                      return (
-                        <motion.div
-                          key={i}
-                          animate={{
-                            x: [0, 6, 0],
-                            opacity: [
-                              0.3 + (i / 10) * 0.2,
-                              0.6 + (i / 10) * 0.4,
-                              0.3 + (i / 10) * 0.2,
-                            ],
-                            scale: [0.9, 1.4, 0.9],
-                          }}
-                          transition={{
-                            duration: 1.5,
-                            repeat: Infinity,
-                            delay: i * 0.1,
-                            ease: "easeInOut",
-                          }}
-                          className="w-1.5 h-1.5 rounded-full"
-                          style={{
-                            backgroundColor: color,
-                            boxShadow: `0 0 15px ${color}80`,
-                          }}
-                        />
-                      );
-                    })}
+                <div className="flex items-center bg-black rounded-full h-8 px-2 border border-white/20 shadow-[0_0_20px_rgba(0,0,0,0.8)] backdrop-blur-md">
+                  <div className="flex items-center h-4">
+                    <div
+                      className="w-[30px] h-full overflow-hidden relative shrink-0"
+                      style={{
+                        maskImage:
+                          "linear-gradient(to right, black 30%, transparent 100%)",
+                        WebkitMaskImage:
+                          "linear-gradient(to right, black 30%, transparent 100%)",
+                      }}
+                    >
+                      <motion.div
+                        className="flex items-center h-full absolute left-0"
+                        animate={{ x: [-50, 0] }}
+                        transition={{
+                          duration: 3,
+                          repeat: Infinity,
+                          ease: "linear",
+                        }}
+                        style={{ width: "100px", gap: "4px" }}
+                      >
+                        {[
+                          "#f97316",
+                          "#a855f7",
+                          "#06b6d4",
+                          "#d8b4fe",
+                          "#3b82f6",
+                          "#f97316",
+                          "#a855f7",
+                          "#06b6d4",
+                          "#d8b4fe",
+                          "#3b82f6",
+                        ].map((color, i) => (
+                          <div
+                            key={i}
+                            className="rounded-full shrink-0"
+                            style={{
+                              backgroundColor: color,
+                              width: "6px",
+                              height: "6px",
+                            }}
+                          />
+                        ))}
+                      </motion.div>
+                    </div>
+                    <motion.div
+                      animate={{ x: [0, 2, 0], opacity: [0.6, 1, 0.6] }}
+                      transition={{
+                        duration: 1.5,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
+                      className="flex items-center -ml-4 relative z-10"
+                    >
+                      <ChevronRight className="w-7 h-7 text-primary" />
+                    </motion.div>
                   </div>
-                  <motion.div
-                    animate={{
-                      x: [0, 4, 0],
-                      opacity: [0.8, 1, 0.8],
-                      scale: [1, 1.15, 1],
-                    }}
-                    transition={{
-                      duration: 1.5,
-                      repeat: Infinity,
-                      delay: 1.0,
-                      ease: "easeInOut",
-                    }}
-                    className="flex items-center"
-                  >
-                    <ChevronRight className="w-8 h-8 text-primary filter drop-shadow-[0_0_12px_rgba(var(--primary-rgb),0.5)]" />
-                  </motion.div>
                 </div>
               </div>
             </div>

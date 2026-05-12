@@ -98,83 +98,75 @@ const GameCard = React.memo(({ game, isSelected, onToggle }: GameCardProps) => {
 GameCard.displayName = "GameCard";
 
 const ScrollIndicator = ({ direction }: { direction: "left" | "right" }) => {
+  const colors = ["#f97316", "#a855f7", "#06b6d4", "#d8b4fe", "#3b82f6"];
+  const doubleColors = [...colors, ...colors];
+  
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className={cn(
-        "absolute top-1/2 -translate-y-1/2 z-40 pointer-events-none flex items-center gap-2 px-4",
-        direction === "left" ? "left-0" : "right-0"
+        "absolute top-1/2 -translate-y-1/2 z-50 pointer-events-none flex items-center",
+        direction === "left" ? "-left-2" : "-right-2"
       )}
     >
-      {direction === "left" && (
-        <motion.div
-          animate={{
-            x: [0, -4, 0],
-            opacity: [0.8, 1, 0.8],
-            scale: [1, 1.15, 1],
-          }}
-          transition={{
-            duration: 1.5,
-            repeat: Infinity,
-            delay: 1.0,
-            ease: "easeInOut",
+      <div className="flex items-center bg-black/90 rounded-full h-10 px-3 border border-white/20 shadow-2xl backdrop-blur-md">
+        {direction === "left" && (
+          <motion.div
+            animate={{ x: [0, -2, 0], opacity: [0.6, 1, 0.6] }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+            className="-ml-1 mr-1 relative z-10 flex items-center"
+          >
+            <ChevronLeft className="w-7 h-7 text-primary" />
+          </motion.div>
+        )}
+
+        <div
+          className="w-[30px] h-4 overflow-hidden relative shrink-0"
+          style={{
+            maskImage: direction === "right" 
+              ? "linear-gradient(to right, black 30%, transparent 100%)" 
+              : "linear-gradient(to left, black 30%, transparent 100%)",
+            WebkitMaskImage: direction === "right" 
+              ? "linear-gradient(to right, black 30%, transparent 100%)" 
+              : "linear-gradient(to left, black 30%, transparent 100%)",
           }}
         >
-          <ChevronLeft className="w-8 h-8 text-primary filter drop-shadow-[0_0_12px_rgba(var(--primary-rgb),0.5)]" />
-        </motion.div>
-      )}
+          <motion.div
+            className="flex items-center h-full absolute left-0"
+            animate={{ x: direction === "right" ? [-50, 0] : [0, -50] }}
+            transition={{
+              duration: 3,
+              repeat: Infinity,
+              ease: "linear",
+            }}
+            style={{ width: "100px", gap: "4px" }}
+          >
+            {doubleColors.map((color, i) => (
+              <div
+                key={i}
+                className="rounded-full shrink-0"
+                style={{ 
+                  backgroundColor: color,
+                  width: "6px",
+                  height: "6px"
+                }}
+              />
+            ))}
+          </motion.div>
+        </div>
 
-      <div className={cn("flex items-center gap-1.5", direction === "left" && "flex-row-reverse")}>
-        {Array.from({ length: 10 }).map((_, i) => {
-          const colors = ["#22d3ee", "#a855f7", "#ec4899"];
-          const color = colors[i % colors.length];
-          return (
-            <motion.div
-              key={i}
-              animate={{
-                x: direction === "right" ? [0, 6, 0] : [0, -6, 0],
-                opacity: [
-                  0.3 + (i / 10) * 0.2,
-                  0.6 + (i / 10) * 0.4,
-                  0.3 + (i / 10) * 0.2,
-                ],
-                scale: [0.9, 1.4, 0.9],
-              }}
-              transition={{
-                duration: 1.5,
-                repeat: Infinity,
-                delay: i * 0.1,
-                ease: "easeInOut",
-              }}
-              className="w-1.5 h-1.5 rounded-full"
-              style={{ 
-                backgroundColor: color,
-                boxShadow: `0 0 15px ${color}80`
-              }}
-            />
-          );
-        })}
+        {direction === "right" && (
+          <motion.div
+            animate={{ x: [0, 2, 0], opacity: [0.6, 1, 0.6] }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+            className="-mr-1 ml-1 relative z-10 flex items-center"
+          >
+            <ChevronRight className="w-7 h-7 text-primary" />
+          </motion.div>
+        )}
       </div>
-
-      {direction === "right" && (
-        <motion.div
-          animate={{
-            x: [0, 4, 0],
-            opacity: [0.8, 1, 0.8],
-            scale: [1, 1.15, 1],
-          }}
-          transition={{
-            duration: 1.5,
-            repeat: Infinity,
-            delay: 1.0,
-            ease: "easeInOut",
-          }}
-        >
-          <ChevronRight className="w-8 h-8 text-primary filter drop-shadow-[0_0_12px_rgba(var(--primary-rgb),0.5)]" />
-        </motion.div>
-      )}
     </motion.div>
   );
 };
@@ -245,7 +237,7 @@ export function GameCarousel({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-zinc-950 via-zinc-950/60 to-transparent z-10 pointer-events-none"
+            className="absolute left-0 top-0 bottom-0 w-48 bg-gradient-to-r from-black via-black/40 to-transparent z-10 pointer-events-none"
           />
         )}
       </AnimatePresence>
@@ -256,7 +248,7 @@ export function GameCarousel({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-zinc-950 via-zinc-950/60 to-transparent z-10 pointer-events-none"
+            className="absolute right-0 top-0 bottom-0 w-48 bg-gradient-to-l from-black via-black/40 to-transparent z-10 pointer-events-none"
           />
         )}
       </AnimatePresence>
