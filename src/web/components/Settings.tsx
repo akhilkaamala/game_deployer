@@ -64,7 +64,7 @@ const DEFAULT_PREFS: UIPrefs = {
   defaultSourceEnv: "dev",
   defaultTargetEnv: "qa",
   dryRunDefault: false,
-  autoSelectFirstGame: true,
+  autoSelectFirstGame: false,
   gameBackupDefault: false,
   jsonBackupDefault: false,
   logAutoScroll: true,
@@ -76,9 +76,18 @@ const DEFAULT_PREFS: UIPrefs = {
 function loadPrefs(): UIPrefs {
   try {
     const raw = localStorage.getItem(LS_KEY);
-    return raw
+    const prefs = raw
       ? { ...DEFAULT_PREFS, ...JSON.parse(raw) }
       : { ...DEFAULT_PREFS };
+
+    // Migration: Force autoSelectFirstGame to false once for everyone
+    if (!localStorage.getItem("migration_autoSelect_v1")) {
+      prefs.autoSelectFirstGame = false;
+      localStorage.setItem("migration_autoSelect_v1", "done");
+      savePrefs(prefs);
+    }
+
+    return prefs;
   } catch {
     return { ...DEFAULT_PREFS };
   }
@@ -731,7 +740,8 @@ export function SettingsManager() {
                             </span>{" "}
                             For Render/Cloud, set an environment variable named{" "}
                             <code className="text-zinc-200">
-                              SSH_KEY_{(env || "").toUpperCase().replace(/-/g, "_")}
+                              SSH_KEY_
+                              {(env || "").toUpperCase().replace(/-/g, "_")}
                             </code>{" "}
                             with your .pem file content. The app will
                             automatically bootstrap it on startup.
@@ -1062,7 +1072,11 @@ export function SettingsManager() {
                 <Button
                   size="sm"
                   onClick={() => {
-                    const val = (document.getElementById("custom-api-input") as HTMLInputElement).value;
+                    const val = (
+                      document.getElementById(
+                        "custom-api-input",
+                      ) as HTMLInputElement
+                    ).value;
                     if (val) {
                       localStorage.setItem("custom_api_url", val.trim());
                       window.location.reload();

@@ -1,9 +1,12 @@
 import React from "react";
 import { Badge } from "./ui/Badge";
 import { cn } from "../lib/utils";
-import { ArrowRight, Server, Wifi, WifiOff, Loader2 } from "lucide-react";
 import { getApiUrl } from "../api";
 import type { DeployEnvironment } from "../types";
+import { EnvironmentNode } from "./ui/EnvironmentNode";
+import { PipelineConnector } from "./ui/PipelineConnector";
+import { motion } from "framer-motion";
+import { Loader2, Wifi, WifiOff, Server } from "lucide-react";
 
 interface EnvironmentSelectionProps {
   source: DeployEnvironment;
@@ -11,6 +14,7 @@ interface EnvironmentSelectionProps {
   onSourceChange: (env: DeployEnvironment) => void;
   onTargetChange: (env: DeployEnvironment) => void;
   availableEnvironments: string[];
+  isDeploying?: boolean;
 }
 
 export function EnvironmentSelection({
@@ -19,163 +23,130 @@ export function EnvironmentSelection({
   onSourceChange,
   onTargetChange,
   availableEnvironments,
+  isDeploying,
 }: EnvironmentSelectionProps) {
   const envs = ["dev", "qa", "preprod"];
-  const [statuses, setStatuses] = React.useState<Record<string, { status: string; latency?: number }>>({});
+  const [statuses, setStatuses] = React.useState<
+    Record<string, { status: string; latency?: number }>
+  >({});
   const [loading, setLoading] = React.useState<Record<string, boolean>>({});
 
   const checkStatus = React.useCallback(async (env: string) => {
-    setLoading(prev => ({ ...prev, [env]: true }));
+    setLoading((prev) => ({ ...prev, [env]: true }));
     try {
       const res = await fetch(getApiUrl("/api/system-health"));
       if (res.ok) {
         const data = await res.json();
         const envData = data.environments.find((e: any) => e.name === env);
         if (envData) {
-          setStatuses(prev => ({ ...prev, [env]: { status: envData.status, latency: envData.latencyMs } }));
+          setStatuses((prev) => ({
+            ...prev,
+            [env]: { status: envData.status, latency: envData.latencyMs },
+          }));
         }
       }
     } catch {
-      setStatuses(prev => ({ ...prev, [env]: { status: "offline" } }));
+      setStatuses((prev) => ({ ...prev, [env]: { status: "offline" } }));
     } finally {
-      setLoading(prev => ({ ...prev, [env]: false }));
+      setLoading((prev) => ({ ...prev, [env]: false }));
     }
   }, []);
 
   React.useEffect(() => {
-    checkStatus(source);
-    const interval = setInterval(() => checkStatus(source), 30000);
+    envs.forEach((env) => checkStatus(env));
+    const interval = setInterval(
+      () => envs.forEach((env) => checkStatus(env)),
+      30000,
+    );
     return () => clearInterval(interval);
-  }, [source, checkStatus]);
-
-  React.useEffect(() => {
-    checkStatus(target);
-    const interval = setInterval(() => checkStatus(target), 30000);
-    return () => clearInterval(interval);
-  }, [target, checkStatus]);
+  }, [checkStatus]);
 
   return (
-    <div className="flex flex-col gap-6 p-6 rounded-xl border border-white/10 bg-white/5 backdrop-blur-md">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-400">
-          Environment Pipeline
-        </h3>
-        <div className="flex items-center gap-2">
-          <Server className="w-4 h-4 text-zinc-500" />
-          <span className="text-xs text-zinc-500">
-            Active Pipeline: {source?.toUpperCase() || "..."} → {target?.toUpperCase() || "..."}
-          </span>
-        </div>
-      </div>
-
-      <div className="flex flex-col md:flex-row items-start gap-8">
-        {/* Source */}
-        <div className="flex-1 w-full space-y-3">
-          <label className="text-xs font-medium text-zinc-500 uppercase">
-            Source Environment
-          </label>
-          <div className="grid grid-cols-2 gap-2">
-            {envs.map((env) => (
-              <button
-                key={env}
-                onClick={() => onSourceChange(env as DeployEnvironment)}
-                className={cn(
-                  "flex items-center justify-between px-4 py-3 rounded-lg border transition-all",
-                  source === env
-                    ? "bg-blue-500/10 border-blue-500/50 shadow-lg shadow-blue-500/10"
-                    : "bg-white/5 border-white/10 hover:border-white/20",
-                )}
-              >
-                <div className="flex flex-col items-start min-w-0">
-                  <span
-                    className={cn(
-                      "text-sm font-bold truncate",
-                      source === env ? "text-blue-400" : "text-zinc-400",
-                    )}
-                  >
-                    {env?.toUpperCase() || "..."}
-                  </span>
-                </div>
-                <div className="flex flex-col items-end gap-1">
-                  <Badge variant={env as any} className="h-4 px-1 text-[10px]">
-                    SRC
-                  </Badge>
-                  {source === env && (
-                    <div className={cn(
-                      "flex items-center gap-1 text-[9px] font-bold uppercase",
-                      statuses[env]?.status === "online" ? "text-emerald-400" : "text-red-400"
-                    )}>
-                      {loading[env] ? <Loader2 className="w-2 h-2 animate-spin" /> : 
-                       statuses[env]?.status === "online" ? <Wifi className="w-2 h-2" /> : <WifiOff className="w-2 h-2" />}
-                      {statuses[env]?.status || "checking"}
-                    </div>
-                  )}
-                </div>
-              </button>
-            ))}
+    <div className="relative p-6 rounded-2xl border border-white/10 bg-[#070a11] overflow-hidden group/container shadow-2xl">
+      <div className="relative z-10 flex flex-col gap-8">
+        <div className="flex items-center justify-between border-b border-white/5 pb-5">
+          <div className="flex flex-col gap-0.5">
+            <h2 className="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+              <div className="w-1 h-4 bg-blue-500 rounded-full" />
+              Environment Pipeline
+            </h2>
+            <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-widest">
+              Automated Deployment Orchestrator
+            </p>
           </div>
-        </div>
-
-        <div className="hidden md:flex flex-col items-center justify-start h-full">
-          {/* Vertical spacer to match the label + gap height (text-xs = 12px, space-y-3 = 12px, total ~24px) */}
-          <div className="h-6" />
-          {/* Centering the arrow relative to the grid buttons (grid with 2 rows is ~104px high) */}
-          <div className="flex-1 flex items-center justify-center min-h-[104px]">
-            <div className="shrink-0 p-3 rounded-full bg-white/5 border border-white/10">
-              <ArrowRight className="w-5 h-5 text-zinc-600" />
+          <div className="flex items-center gap-4">
+            <div className="flex flex-col items-end">
+              <div className="flex items-center gap-2">
+                <div
+                  className={cn(
+                    "w-1.5 h-1.5 rounded-full",
+                    isDeploying
+                      ? "bg-blue-500 animate-pulse"
+                      : "bg-emerald-500/50",
+                  )}
+                />
+                <span
+                  className={cn(
+                    "text-[10px] font-bold uppercase tracking-tight",
+                    isDeploying ? "text-blue-400" : "text-zinc-500",
+                  )}
+                >
+                  {isDeploying ? "Active Transfer" : "System Standby"}
+                </span>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Target */}
-        <div className="flex-1 w-full space-y-3">
-          <label className="text-xs font-medium text-zinc-500 uppercase">
-            Target Environment
-          </label>
-          <div className="grid grid-cols-2 gap-2">
-            {envs.map((env) => {
-              const isDisabled = env === source;
-              return (
-                <button
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-6 lg:gap-2">
+          <div className="contents">
+            {/* Source Side */}
+            <div className="w-full lg:w-[38%] flex flex-col gap-2">
+              <div className="flex items-center mb-1 px-1">
+                <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">
+                  Source
+                </span>
+              </div>
+              {envs.map((env) => (
+                <EnvironmentNode
                   key={env}
-                  disabled={isDisabled}
+                  name={env}
+                  type="src"
+                  status={statuses[env]?.status}
+                  isSelected={source === env}
+                  isDeploying={isDeploying && source === env}
+                  isLoading={loading[env]}
+                  onClick={() => onSourceChange(env as DeployEnvironment)}
+                />
+              ))}
+            </div>
+
+            {/* Central Pipeline Connector */}
+            <div className="flex-1 w-full lg:w-auto py-4 lg:py-0">
+              <PipelineConnector isActive={!!isDeploying} />
+            </div>
+
+            {/* Target Side */}
+            <div className="w-full lg:w-[38%] flex flex-col gap-2">
+              <div className="flex items-center justify-end mb-1 px-1">
+                <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">
+                  Destination
+                </span>
+              </div>
+              {envs.map((env) => (
+                <EnvironmentNode
+                  key={env}
+                  name={env}
+                  type="dst"
+                  status={statuses[env]?.status}
+                  isSelected={target === env}
+                  isDeploying={isDeploying && target === env}
+                  isDisabled={env === source}
+                  isLoading={loading[env]}
                   onClick={() => onTargetChange(env as DeployEnvironment)}
-                  className={cn(
-                    "flex items-center justify-between px-4 py-3 rounded-lg border transition-all",
-                    target === env
-                      ? "bg-red-500/10 border-red-500/50 shadow-lg shadow-red-500/10"
-                      : "bg-white/5 border-white/10 hover:border-white/20",
-                    isDisabled && "opacity-20 cursor-not-allowed grayscale",
-                  )}
-                >
-                  <div className="flex flex-col items-start min-w-0">
-                    <span
-                      className={cn(
-                        "text-sm font-bold truncate",
-                        target === env ? "text-red-400" : "text-zinc-400",
-                      )}
-                    >
-                      {env?.toUpperCase() || "..."}
-                    </span>
-                  </div>
-                  <div className="flex flex-col items-end gap-1">
-                    <Badge variant={env as any} className="h-4 px-1 text-[10px]">
-                      DST
-                    </Badge>
-                    {target === env && (
-                      <div className={cn(
-                        "flex items-center gap-1 text-[9px] font-bold uppercase",
-                        statuses[env]?.status === "online" ? "text-emerald-400" : "text-red-400"
-                      )}>
-                        {loading[env] ? <Loader2 className="w-2 h-2 animate-spin" /> : 
-                         statuses[env]?.status === "online" ? <Wifi className="w-2 h-2" /> : <WifiOff className="w-2 h-2" />}
-                        {statuses[env]?.status || "checking"}
-                      </div>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
+                />
+              ))}
+            </div>
           </div>
         </div>
       </div>

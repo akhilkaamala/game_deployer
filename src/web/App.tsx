@@ -395,6 +395,7 @@ export function App() {
               }}
               onTargetChange={setTargetEnv}
               availableEnvironments={config?.environments ?? []}
+              isDeploying={state === "loading"}
             />
           </motion.div>
 
@@ -671,6 +672,7 @@ export function App() {
           <LogViewer
             logs={logs}
             state={state}
+            selectedGames={gamePaths}
             onClear={() => setLogs([])}
             onDownload={downloadReport}
           />

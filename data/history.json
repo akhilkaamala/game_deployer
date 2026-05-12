@@ -1,5 +1,183 @@
 [
   {
+    "id": "1778562443663",
+    "timestamp": "2026-05-12T05:07:23.663Z",
+    "reports": [
+      {
+        "environment": "dev",
+        "deploymentVersion": "v2026-05-12T05:05:40.230Z",
+        "sourcePath": "/home/blazeagrqa/blazeagr-qa-client/friskyfootball",
+        "targetPath": "/home/blazeagrdev/blzAgrDev_S3client/games/friskyfootball",
+        "targetJsonPath": "/home/blazeagrdev/blzAgrDev_S3client/games/content/locale/slot/greek",
+        "gamePath": "friskyfootball",
+        "status": "success",
+        "host": "3.1.242.159",
+        "cloudfront": {
+          "attempted": false,
+          "status": "skipped",
+          "reason": "distribution_not_configured"
+        },
+        "backupCreated": null,
+        "rollbackPointsAvailable": 1,
+        "deployedAt": "2026-05-12T05:06:32.278Z",
+        "artifacts": "friskyfootball",
+        "syncType": "remote-to-remote"
+      },
+      {
+        "environment": "dev",
+        "deploymentVersion": "v2026-05-12T05:06:32.278Z",
+        "sourcePath": "/home/blazeagrqa/blazeagr-qa-client/spookysplash",
+        "targetPath": "/home/blazeagrdev/blzAgrDev_S3client/games/spookysplash",
+        "targetJsonPath": "/home/blazeagrdev/blzAgrDev_S3client/games/content/locale/slot/greek",
+        "gamePath": "spookysplash",
+        "status": "success",
+        "host": "3.1.242.159",
+        "cloudfront": {
+          "attempted": false,
+          "status": "skipped",
+          "reason": "distribution_not_configured"
+        },
+        "backupCreated": null,
+        "rollbackPointsAvailable": 1,
+        "deployedAt": "2026-05-12T05:07:23.660Z",
+        "artifacts": "spookysplash",
+        "syncType": "remote-to-remote"
+      }
+    ],
+    "summary": {
+      "total": 2,
+      "success": 2,
+      "failed": 0
+    }
+  },
+  {
+    "id": "1778562072777",
+    "timestamp": "2026-05-12T05:01:12.777Z",
+    "reports": [
+      {
+        "environment": "qa",
+        "deploymentVersion": "v2026-05-12T04:57:35.647Z",
+        "sourcePath": "/home/blazeagrdev/blzAgrDev_S3client/games/golden_vault",
+        "targetPath": "/home/blazeagrqa/blazeagr-qa-client/golden_vault",
+        "targetJsonPath": "/home/blazeagrqa/blazeagr-qa-client/content/locale/slot/pharaoh",
+        "gamePath": "golden_vault",
+        "status": "success",
+        "host": "18.142.2.196",
+        "cloudfront": {
+          "attempted": true,
+          "status": "success",
+          "distributionId": "E2XV2YWOZQAK35",
+          "output": "{\n    \"Location\": \"https://cloudfront.amazonaws.com/2020-05-31/distribution/E2XV2YWOZQAK35/invalidation/IB5C60NOTABH8UEHGP5ZXTRWAK\",\n    \"Invalidation\": {\n        \"Id\": \"IB5C60NOTABH8UEHGP5ZXTRWAK\",\n        \"Status\": \"InProgress\",\n        \"CreateTime\": \"2026-05-12T05:01:12.407000+00:00\",\n        \"InvalidationBatch\": {\n            \"Paths\": {\n                \"Quantity\": 1,\n                \"Items\": [\n                    \"/*\"\n                ]\n            },\n            \"CallerReference\": \"cli-1778562071-502593\"\n        }\n    }\n}"
+        },
+        "backupCreated": null,
+        "rollbackPointsAvailable": 1,
+        "deployedAt": "2026-05-12T05:01:12.774Z",
+        "artifacts": "golden_vault",
+        "syncType": "remote-to-remote"
+      }
+    ],
+    "summary": {
+      "total": 1,
+      "success": 1,
+      "failed": 0
+    }
+  },
+  {
+    "id": "1778560348451",
+    "timestamp": "2026-05-12T04:32:28.451Z",
+    "reports": [
+      {
+        "environment": "qa",
+        "deploymentVersion": "v2026-05-12T04:23:19.961Z",
+        "sourcePath": "/home/blazeagrdev/blzAgrDev_S3client/games/the_happy_tent",
+        "targetPath": "/home/blazeagrqa/blazeagr-qa-client/the_happy_tent",
+        "targetJsonPath": "/home/blazeagrqa/blazeagr-qa-client/content/locale/slot/farm",
+        "gamePath": "the_happy_tent",
+        "status": "success",
+        "host": "18.142.2.196",
+        "cloudfront": {
+          "attempted": true,
+          "status": "success",
+          "distributionId": "E2XV2YWOZQAK35",
+          "output": "{\n    \"Location\": \"https://cloudfront.amazonaws.com/2020-05-31/distribution/E2XV2YWOZQAK35/invalidation/IAT781ZTWIH4J9E5F3IO5OL9C5\",\n    \"Invalidation\": {\n        \"Id\": \"IAT781ZTWIH4J9E5F3IO5OL9C5\",\n        \"Status\": \"InProgress\",\n        \"CreateTime\": \"2026-05-12T04:25:32.596000+00:00\",\n        \"InvalidationBatch\": {\n            \"Paths\": {\n                \"Quantity\": 1,\n                \"Items\": [\n                    \"/*\"\n                ]\n            },\n            \"CallerReference\": \"cli-1778559931-27412\"\n        }\n    }\n}"
+        },
+        "backupCreated": null,
+        "rollbackPointsAvailable": 1,
+        "deployedAt": "2026-05-12T04:25:32.945Z",
+        "artifacts": "the_happy_tent",
+        "syncType": "remote-to-remote"
+      },
+      {
+        "environment": "qa",
+        "deploymentVersion": "v2026-05-12T04:25:32.946Z",
+        "sourcePath": "/home/blazeagrdev/blzAgrDev_S3client/games/the_pirate_king",
+        "targetPath": "/home/blazeagrqa/blazeagr-qa-client/the_pirate_king",
+        "targetJsonPath": "/home/blazeagrqa/blazeagr-qa-client/content/locale/slot/farm",
+        "gamePath": "the_pirate_king",
+        "status": "success",
+        "host": "18.142.2.196",
+        "cloudfront": {
+          "attempted": true,
+          "status": "success",
+          "distributionId": "E2XV2YWOZQAK35",
+          "output": "{\n    \"Location\": \"https://cloudfront.amazonaws.com/2020-05-31/distribution/E2XV2YWOZQAK35/invalidation/I6LA4DEXDIEW741KG57NGPOKQN\",\n    \"Invalidation\": {\n        \"Id\": \"I6LA4DEXDIEW741KG57NGPOKQN\",\n        \"Status\": \"InProgress\",\n        \"CreateTime\": \"2026-05-12T04:27:56.451000+00:00\",\n        \"InvalidationBatch\": {\n            \"Paths\": {\n                \"Quantity\": 1,\n                \"Items\": [\n                    \"/*\"\n                ]\n            },\n            \"CallerReference\": \"cli-1778560075-469911\"\n        }\n    }\n}"
+        },
+        "backupCreated": null,
+        "rollbackPointsAvailable": 1,
+        "deployedAt": "2026-05-12T04:27:56.824Z",
+        "artifacts": "the_pirate_king",
+        "syncType": "remote-to-remote"
+      },
+      {
+        "environment": "qa",
+        "deploymentVersion": "v2026-05-12T04:27:56.825Z",
+        "sourcePath": "/home/blazeagrdev/blzAgrDev_S3client/games/indian_wonders",
+        "targetPath": "/home/blazeagrqa/blazeagr-qa-client/indian_wonders",
+        "targetJsonPath": "/home/blazeagrqa/blazeagr-qa-client/content/locale/slot/farm",
+        "gamePath": "indian_wonders",
+        "status": "success",
+        "host": "18.142.2.196",
+        "cloudfront": {
+          "attempted": true,
+          "status": "success",
+          "distributionId": "E2XV2YWOZQAK35",
+          "output": "{\n    \"Location\": \"https://cloudfront.amazonaws.com/2020-05-31/distribution/E2XV2YWOZQAK35/invalidation/I74USO6LU3FLQ6FCUQUX55Z7MQ\",\n    \"Invalidation\": {\n        \"Id\": \"I74USO6LU3FLQ6FCUQUX55Z7MQ\",\n        \"Status\": \"InProgress\",\n        \"CreateTime\": \"2026-05-12T04:30:06.970000+00:00\",\n        \"InvalidationBatch\": {\n            \"Paths\": {\n                \"Quantity\": 1,\n                \"Items\": [\n                    \"/*\"\n                ]\n            },\n            \"CallerReference\": \"cli-1778560205-270808\"\n        }\n    }\n}"
+        },
+        "backupCreated": null,
+        "rollbackPointsAvailable": 1,
+        "deployedAt": "2026-05-12T04:30:07.314Z",
+        "artifacts": "indian_wonders",
+        "syncType": "remote-to-remote"
+      },
+      {
+        "environment": "qa",
+        "deploymentVersion": "v2026-05-12T04:30:07.314Z",
+        "sourcePath": "/home/blazeagrdev/blzAgrDev_S3client/games/lost_treasures_of_egypt",
+        "targetPath": "/home/blazeagrqa/blazeagr-qa-client/lost_treasures_of_egypt",
+        "targetJsonPath": "/home/blazeagrqa/blazeagr-qa-client/content/locale/slot/farm",
+        "gamePath": "lost_treasures_of_egypt",
+        "status": "success",
+        "host": "18.142.2.196",
+        "cloudfront": {
+          "attempted": true,
+          "status": "success",
+          "distributionId": "E2XV2YWOZQAK35",
+          "output": "{\n    \"Location\": \"https://cloudfront.amazonaws.com/2020-05-31/distribution/E2XV2YWOZQAK35/invalidation/I1BEWJ444CVK512MSTSFORX2BA\",\n    \"Invalidation\": {\n        \"Id\": \"I1BEWJ444CVK512MSTSFORX2BA\",\n        \"Status\": \"InProgress\",\n        \"CreateTime\": \"2026-05-12T04:32:28.044000+00:00\",\n        \"InvalidationBatch\": {\n            \"Paths\": {\n                \"Quantity\": 1,\n                \"Items\": [\n                    \"/*\"\n                ]\n            },\n            \"CallerReference\": \"cli-1778560347-130883\"\n        }\n    }\n}"
+        },
+        "backupCreated": null,
+        "rollbackPointsAvailable": 1,
+        "deployedAt": "2026-05-12T04:32:28.449Z",
+        "artifacts": "lost_treasures_of_egypt",
+        "syncType": "remote-to-remote"
+      }
+    ],
+    "summary": {
+      "total": 4,
+      "success": 4,
+      "failed": 0
+    }
+  },
+  {
     "id": "1778494494598",
     "timestamp": "2026-05-11T10:14:54.598Z",
     "reports": [

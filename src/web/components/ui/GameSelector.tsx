@@ -10,6 +10,7 @@ import { Input } from "./Input";
 import { ScrollArea } from "./ScrollArea";
 import { Badge } from "./Badge";
 import { Button } from "./Button";
+import { GameCarousel } from "./GameCarousel";
 import { cn } from "../../lib/utils";
 
 interface GameSelectorProps {
@@ -139,11 +140,11 @@ export function GameSelector({
 
             return (
               <div key={category} className="space-y-2">
-                <button
-                  onClick={() => toggleGroup(category)}
-                  className="flex items-center justify-between w-full p-2 rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 transition-colors group"
-                >
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between w-full p-2 rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 transition-colors group">
+                  <div
+                    className="flex items-center gap-2 cursor-pointer flex-1"
+                    onClick={() => toggleGroup(category)}
+                  >
                     <ChevronDown
                       className={cn(
                         "w-4 h-4 text-zinc-500 transition-transform",
@@ -170,54 +171,55 @@ export function GameSelector({
                       {groupGames.length}
                     </Badge>
                   </div>
-                  {groupSelectedCount > 0 && (
-                    <Badge
-                      variant="success"
-                      className="h-4 text-[9px] px-1.5 font-bold"
+
+                  <div className="flex items-center gap-2 px-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-[9px] font-bold uppercase tracking-wider text-zinc-500 hover:text-primary hover:bg-primary/10 transition-all"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const newSelected = [
+                          ...new Set([...selectedGames, ...groupGames]),
+                        ];
+                        onSelectAll(newSelected);
+                      }}
                     >
-                      {groupSelectedCount} SELECTED
-                    </Badge>
-                  )}
-                </button>
+                      Select All
+                    </Button>
+                    <div className="w-px h-3 bg-white/10" />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-[9px] font-bold uppercase tracking-wider text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const newSelected = selectedGames.filter(
+                          (g) => !groupGames.includes(g),
+                        );
+                        onSelectAll(newSelected);
+                      }}
+                    >
+                      Deselect
+                    </Button>
+                    {groupSelectedCount > 0 && (
+                      <Badge
+                        variant="success"
+                        className="h-4 text-[9px] px-1.5 font-bold ml-2"
+                      >
+                        {groupSelectedCount}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
 
                 {isExpanded && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 pl-4 border-l border-white/5 ml-2">
-                    {groupGames.map((game) => {
-                      const isSelected = selectedGames.includes(game);
-                      return (
-                        <div
-                          key={game}
-                          onClick={() => onToggle(game)}
-                          className={cn(
-                            "group flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all duration-200",
-                            isSelected
-                              ? "bg-primary/10 border-primary/30 shadow-sm"
-                              : "bg-white/5 border-white/10 hover:border-white/20 hover:bg-white/10",
-                          )}
-                        >
-                          <div
-                            className={cn(
-                              "flex-shrink-0 w-4 h-4 rounded border transition-colors flex items-center justify-center",
-                              isSelected
-                                ? "bg-primary border-primary text-primary-foreground"
-                                : "border-zinc-500",
-                            )}
-                          >
-                            {isSelected && <ChevronRight className="w-3 h-3" />}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p
-                              className={cn(
-                                "text-xs font-medium truncate",
-                                isSelected ? "text-primary" : "text-zinc-400",
-                              )}
-                            >
-                              {game}
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    })}
+                  <div className="py-2">
+                    <GameCarousel
+                      games={groupGames}
+                      selectedGames={selectedGames}
+                      onToggle={onToggle}
+                    />
                   </div>
                 )}
               </div>
