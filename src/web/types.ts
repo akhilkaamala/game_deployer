@@ -6,6 +6,7 @@ export interface DeployRequest {
   retain: number | null;
   dryRun: boolean;
   gamePath: string | null;
+  backupGames?: string | null;
   skipGameBackup?: boolean;
   skipJsonBackup?: boolean;
 }
@@ -24,4 +25,3 @@ export interface ConfigResponse {
   serverBasePaths: Record<string, string>;
   jsonRootPaths: Record<string, string>;
 }
-

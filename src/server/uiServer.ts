@@ -613,7 +613,11 @@ async function handleApi(
     const cliRetain = Number.isInteger(body.retain) ? body.retain : null;
     const dryRun = Boolean(body.dryRun);
     const gamePath = body.gamePath ? String(body.gamePath).trim() : null;
-    const skipGameBackup = Boolean(body.skipGameBackup);
+    const backupGames = body.backupGames
+      ? String(body.backupGames)
+          .split(",")
+          .map((s: string) => s.trim())
+      : [];
     const skipJsonBackup = Boolean(body.skipJsonBackup);
 
     if (!SUPPORTED_ENVS.includes(sourceEnv))
@@ -632,14 +636,18 @@ async function handleApi(
       const gameStart = Date.now();
       let currentGameStatus = "SUCCESS";
       try {
+        // Determine if this specific game needs a backup
+        const skipThisGameBackup = !backupGames.includes(
+          singleGamePath || "Core",
+        );
+
         const report = await deployEnvironment({
           rootDir,
           config,
           sourceEnv,
           targetEnv,
           gamePath: singleGamePath,
-          skipGameBackup,
-          skipJsonBackup,
+          skipGameBackup: skipThisGameBackup,
           dryRun,
         });
         deploymentReports.push(report);
@@ -661,8 +669,18 @@ async function handleApi(
         const seconds = (durationSeconds % 60).toFixed(1);
         const durationStr =
           minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+        const displayName =
+          singleGamePath === "content"
+            ? "CONTENT FOLDER"
+            : singleGamePath || "CORE ASSETS";
+
+        if (currentGameStatus === "SUCCESS") {
+          logger.info(`Syncing Completed for ${displayName}`);
+        }
+        logger.info(`${displayName} : ${currentGameStatus} [${durationStr}]`);
+
         stats.push({
-          name: singleGamePath || "Core Files",
+          name: displayName,
           duration: durationStr,
           status: currentGameStatus,
         });
@@ -671,14 +689,15 @@ async function handleApi(
 
     await saveHistory(rootDir, deploymentReports);
     if (stats.length > 0) {
-      logger.info(`\n${"=".repeat(40)}\nDEPLOYMENT SUMMARY\n${"=".repeat(40)}`);
-      for (const s of stats) {
-        const statusStr = s.status === "FAILED" ? "❌ FAILED" : "✅ SUCCESS";
-        logger.info(
-          `${s.name.padEnd(25)}: ${s.duration.padEnd(10)} [${statusStr}]`,
-        );
-      }
-      logger.info(`${"=".repeat(40)}\n`);
+      logger.info(
+        `\n┌${"─".repeat(50)}┐\n│ DEPLOYMENT SUMMARY${" ".repeat(32)}│\n├${"─".repeat(50)}┤\n${stats
+          .map((s) => {
+            const statusStr =
+              s.status === "SUCCESS" ? "✅ SUCCESS" : "❌ FAILED";
+            return `│ ${s.name.padEnd(22)}: ${s.duration.padEnd(10)} [${statusStr.padEnd(10)}] │`;
+          })
+          .join("\n")}\n└${"─".repeat(50)}┘\n`,
+      );
     }
 
     return sendJson(res, 200, {

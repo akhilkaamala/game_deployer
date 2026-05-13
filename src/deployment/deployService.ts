@@ -63,44 +63,22 @@ function resolvePaths({
       ? mappedGameData
       : mappedGameData.path
     : normalizedGameName;
-  // Determine JSON relative path
-  const rawJsonExt = mappedGameData?.jsonExt || ".json";
-  const isPathPrefix = rawJsonExt.startsWith("/");
-  const mappedJsonRelPath = isPathPrefix
-    ? rawJsonExt
-    : `${mappedGameFolder}${rawJsonExt}`;
 
   // Source Paths
   const sourcePath = mappedGameFolder
     ? path.posix.join(sourceServer.basePath, mappedGameFolder)
     : sourceServer.basePath;
-  const sourceJsonPath =
-    sourceServer.jsonRootPath && mappedGameFolder
-      ? path.posix.join(
-          sourceServer.jsonRootPath,
-          mappedJsonRelPath.replace(/^\/+/, ""),
-        )
-      : null;
 
   // Target Paths
   const targetPath = mappedGameFolder
     ? path.posix.join(targetServer.basePath, mappedGameFolder)
     : targetServer.basePath;
-  const targetJsonPath =
-    targetServer.jsonRootPath && mappedGameFolder
-      ? path.posix.join(
-          targetServer.jsonRootPath,
-          mappedJsonRelPath.replace(/^\/+/, ""),
-        )
-      : null;
 
   return {
     sourceServer,
     targetServer,
     sourcePath,
-    sourceJsonPath,
     targetPath,
-    targetJsonPath,
     gamePath: mappedGameFolder,
   };
 }
@@ -175,7 +153,6 @@ export async function deployEnvironment({
   targetEnv,
   gamePath,
   skipGameBackup,
-  skipJsonBackup,
   dryRun,
 }: {
   rootDir: string;
@@ -184,7 +161,6 @@ export async function deployEnvironment({
   targetEnv: string;
   gamePath?: string | null;
   skipGameBackup?: boolean;
-  skipJsonBackup?: boolean;
   dryRun?: boolean;
 }) {
   logger.info(`Deploying ${gamePath || "Core Files"}`);
@@ -205,29 +181,35 @@ export async function deployEnvironment({
     throw new Error(`Source SSH key not found locally: ${sourceServer.key}`);
   }
 
-  logger.info(`Connecting ${sourceEnv.toUpperCase()} Server...`);
-  await runSsh(sourceServer, "echo 1");
-  logger.info(`${sourceEnv.toUpperCase()} Connected`);
+  const displayName = gamePath === "content" ? "CONTENT" : gamePath || "CORE";
 
-  logger.info(`Connecting ${targetEnv.toUpperCase()} Server...`);
+  logger.info(
+    `Connecting ${sourceEnv.toUpperCase()} Server for ${displayName}...`,
+  );
+  await runSsh(sourceServer, "echo 1");
+  logger.info(`${sourceEnv.toUpperCase()} Connected for ${displayName}`);
+
+  logger.info(
+    `Connecting ${targetEnv.toUpperCase()} Server for ${displayName}...`,
+  );
   await runSsh(targetServer, "echo 1");
-  logger.info(`${targetEnv.toUpperCase()} Connected`);
+  logger.info(`${targetEnv.toUpperCase()} Connected for ${displayName}`);
 
   // Ensure target base paths exist
   await runSsh(
     targetServer,
     `mkdir -p ${shSingleQuote(targetServer.basePath)}`,
   );
-  if (paths.targetJsonPath) {
-    await runSsh(
-      targetServer,
-      `mkdir -p ${shSingleQuote(path.posix.dirname(paths.targetJsonPath))}`,
-    );
-  }
+  // Ensure target base paths exist
+  await runSsh(
+    targetServer,
+    `mkdir -p ${shSingleQuote(targetServer.basePath)}`,
+  );
 
   let backupCreated = null;
 
-  // 1. Backup Game Folder
+  // 1. Backup Folder
+  const displayLabel = gamePath === "content" ? "Content" : "Game";
   if (!skipGameBackup) {
     backupCreated = await createBackup({
       rootDir,
@@ -235,30 +217,14 @@ export async function deployEnvironment({
       envName: targetEnv,
       deploymentVersion: version,
       sourcePathOverride: targetPath,
-      label: "Game",
+      label: `${displayName} ${displayLabel}`,
     });
   } else {
-    logger.info(`Skipping Game backup as requested.`);
-  }
-
-  // 2. Backup JSON Folder
-  if (!skipJsonBackup && paths.targetJsonPath) {
-    await createBackup({
-      rootDir,
-      config,
-      envName: targetEnv,
-      deploymentVersion: version,
-      sourcePathOverride: paths.targetJsonPath,
-      label: "JSON",
-    });
-  } else if (!paths.targetJsonPath) {
-    // skip silently or log info
-  } else {
-    logger.info(`Skipping JSON backup as requested.`);
+    logger.info(`Skipping ${displayLabel} backup as requested.`);
   }
 
   logger.info(
-    `${dryRun ? "[DRY RUN] " : ""}Syncing from ${sourceEnv.toUpperCase()} to ${targetEnv.toUpperCase()}...`,
+    `${dryRun ? "[DRY RUN] " : ""}Syncing ${displayName} from ${sourceEnv.toUpperCase()} to ${targetEnv.toUpperCase()}...`,
   );
   await runRemoteToRemoteRsync(
     sourceServer,
@@ -266,20 +232,13 @@ export async function deployEnvironment({
     sourcePath,
     targetPath,
     dryRun,
+    (percent) => {
+      logger.info(`[PROGRESS] ${displayName} ${percent}%`);
+    },
   );
-  logger.info(`${dryRun ? "[DRY RUN] " : ""}Syncing Completed`);
-
-  if (paths.sourceJsonPath && paths.targetJsonPath) {
-    logger.info(`${dryRun ? "[DRY RUN] " : ""}Syncing JSON Files`);
-    await runRemoteToRemoteRsync(
-      sourceServer,
-      targetServer,
-      paths.sourceJsonPath,
-      paths.targetJsonPath,
-      dryRun,
-    );
-    logger.info(`${dryRun ? "[DRY RUN] " : ""}Synced Json files`);
-  }
+  logger.info(
+    `${dryRun ? "[DRY RUN] " : ""}Syncing Completed for ${displayName}`,
+  );
 
   if (dryRun) {
     logger.info(`[DRY RUN] Skipping CloudFront invalidation.`);
@@ -292,19 +251,18 @@ export async function deployEnvironment({
 
   await runSsh(targetServer, `test -d ${shSingleQuote(targetPath)}`);
 
-  logger.info(`Invalidating ${targetEnv.toUpperCase()}`);
+  logger.info(`Invalidating ${targetEnv.toUpperCase()} for ${displayName}`);
   const cloudfront = await runCloudFrontInvalidationIfConfigured(
     targetServer,
     targetEnv,
   );
-  logger.info(`Invalidating Completed`);
+  logger.info(`Invalidating Completed for ${displayName}`);
 
   const report = {
     environment: targetEnv,
     deploymentVersion: version,
     sourcePath: sourcePath,
     targetPath,
-    targetJsonPath: paths.targetJsonPath,
     gamePath: paths.gamePath,
     status: "success",
     host: targetServer.host,

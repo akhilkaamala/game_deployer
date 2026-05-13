@@ -4,32 +4,43 @@ import {
   Filter,
   ChevronDown,
   Layers,
+  Database,
+  Archive,
 } from "lucide-react";
 import { Input } from "./Input";
 import { ScrollArea } from "./ScrollArea";
 import { Badge } from "./Badge";
 import { Button } from "./Button";
-import { GameGrid } from "./GameGrid";
+import { GameGrid, GameCard } from "./GameGrid";
 import { cn } from "../../lib/utils";
 
 interface GameSelectorProps {
   games: string[];
   selectedGames: string[];
+  backupGames: string[];
   gameFolderMap: Record<string, any>;
   onToggle: (game: string) => void;
+  onToggleBackup: (game: string) => void;
   onSelectAll: (games: string[]) => void;
   onDeselectAll: () => void;
+  onSelectBackups: (games: string[]) => void;
+  onDeselectBackups: () => void;
 }
 
 export function GameSelector({
   games,
   selectedGames,
+  backupGames,
   gameFolderMap,
   onToggle,
+  onToggleBackup,
   onSelectAll,
   onDeselectAll,
+  onSelectBackups,
+  onDeselectBackups,
 }: GameSelectorProps) {
   const [search, setSearch] = useState("");
+  const [showActions, setShowActions] = useState(true);
   const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
 
   // Derive category from jsonExt — stays in sync with deployment.config.json
@@ -108,24 +119,30 @@ export function GameSelector({
 
   return (
     <div className="flex flex-col h-full gap-4">
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 group/search">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-600 transition-colors group-focus-within/search:text-primary" />
-          <Input
-            placeholder="Search games..."
-            className="h-9 pl-9 bg-white/[0.02] border-white/5 focus:border-primary/50 focus:ring-0 transition-all text-xs"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1 group/search">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-600 transition-colors group-focus-within/search:text-primary" />
+            <Input
+              placeholder="Search games..."
+              className="h-10 pl-9 bg-white/[0.02] border-white/5 focus:border-primary/50 focus:ring-0 transition-all text-xs"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <button
+            onClick={() => setShowActions(!showActions)}
+            className={cn(
+              "p-2.5 rounded-lg border transition-all",
+              showActions
+                ? "bg-primary/10 border-primary/30 text-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.2)]"
+                : "bg-white/[0.02] border-white/5 text-zinc-600 hover:bg-white/10 hover:border-white/10",
+            )}
+            title="Toggle Group Actions Visibility"
+          >
+            <Layers className="w-4 h-4" />
+          </button>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-9 border-white/5 bg-white/[0.03] text-[10px] font-bold uppercase tracking-tight hover:bg-white/10 transition-all px-4"
-          onClick={handleSelectAll}
-        >
-          {allSelected ? "Deselect All" : "Select Result"}
-        </Button>
       </div>
 
       <ScrollArea className="flex-1 -mx-2 px-2">
@@ -136,6 +153,15 @@ export function GameSelector({
               selectedGames.includes(g),
             ).length;
             const [mainCategory, subCategory] = category.split(" - ");
+            const allInGroupSelected = groupGames.every((g) =>
+              selectedGames.includes(g),
+            );
+            const selectedInGroup = groupGames.filter((g) =>
+              selectedGames.includes(g),
+            );
+            const allInGroupBackedUp =
+              selectedInGroup.length > 0 &&
+              selectedInGroup.every((g) => backupGames.includes(g));
 
             return (
               <div key={category} className="space-y-1">
@@ -164,39 +190,82 @@ export function GameSelector({
                       )}
                     </div>
                     <div className="w-5 h-5 flex items-center justify-center bg-white/10 rounded-full border border-white/5 shadow-inner">
-                      <span className="text-[10px] font-mono font-black text-zinc-300">{groupGames.length}</span>
+                      <span className="text-[10px] font-mono font-black text-zinc-300">
+                        {groupGames.length}
+                      </span>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1.5 px-1 opacity-0 group-hover/header:opacity-100 transition-opacity">
+                  <div
+                    className={cn(
+                      "flex items-center gap-1.5 px-1 transition-all duration-300",
+                      showActions
+                        ? "opacity-100 translate-x-0"
+                        : "opacity-0 translate-x-4 pointer-events-none group-hover/header:opacity-100 group-hover/header:translate-x-0 group-hover/header:pointer-events-auto",
+                    )}
+                  >
                     <button
-                      className="text-[9px] font-black uppercase tracking-tight text-zinc-500 hover:text-primary transition-colors px-1"
+                      className={cn(
+                        "text-[9px] font-black uppercase tracking-tight transition-colors px-1",
+                        allInGroupSelected
+                          ? "text-primary"
+                          : "text-zinc-500 hover:text-primary",
+                      )}
                       onClick={(e) => {
                         e.stopPropagation();
-                        const newSelected = [
-                          ...new Set([...selectedGames, ...groupGames]),
-                        ];
-                        onSelectAll(newSelected);
+                        if (allInGroupSelected) {
+                          // Toggle OFF: remove all group games from selectedGames
+                          const newSelected = selectedGames.filter(
+                            (g) => !groupGames.includes(g),
+                          );
+                          onSelectAll(newSelected);
+                        } else {
+                          // Toggle ON: add all group games to selectedGames
+                          const newSelected = [
+                            ...new Set([...selectedGames, ...groupGames]),
+                          ];
+                          onSelectAll(newSelected);
+                        }
                       }}
                     >
                       ALL
                     </button>
                     <div className="w-px h-2 bg-white/10" />
                     <button
-                      className="text-[9px] font-black uppercase tracking-tight text-zinc-500 hover:text-red-400 transition-colors px-1"
+                      className={cn(
+                        "text-[9px] font-black uppercase tracking-tight transition-colors px-1",
+                        selectedInGroup.length === 0
+                          ? "opacity-30 cursor-not-allowed pointer-events-none grayscale"
+                          : allInGroupBackedUp
+                            ? "text-emerald-500"
+                            : "text-zinc-500 hover:text-emerald-500",
+                      )}
                       onClick={(e) => {
                         e.stopPropagation();
-                        const newSelected = selectedGames.filter(
-                          (g) => !groupGames.includes(g),
-                        );
-                        onSelectAll(newSelected);
+                        if (selectedInGroup.length === 0) return;
+
+                        if (allInGroupBackedUp) {
+                          // Toggle OFF: remove selected group games from backupGames
+                          const newBackups = backupGames.filter(
+                            (g) => !selectedInGroup.includes(g),
+                          );
+                          onSelectBackups(newBackups);
+                        } else {
+                          // Toggle ON: add selected group games to backupGames
+                          const newBackups = [
+                            ...new Set([...backupGames, ...selectedInGroup]),
+                          ];
+                          onSelectBackups(newBackups);
+                        }
                       }}
                     >
-                      NONE
+                      BACKUP
                     </button>
                     {groupSelectedCount > 0 && (
                       <div className="w-4 h-4 flex items-center justify-center bg-primary rounded-full ml-1 shadow-[0_0_10px_rgba(var(--primary-rgb),0.3)]">
-                        <span className="text-[9px] font-black text-primary-foreground">{groupSelectedCount}</span>
+                        <span className="text-[9px] font-black text-primary-foreground">
+                          {groupSelectedCount}
+                        </span>
                       </div>
                     )}
                   </div>
@@ -207,7 +276,9 @@ export function GameSelector({
                     <GameGrid
                       games={groupGames}
                       selectedGames={selectedGames}
+                      backupGames={backupGames}
                       onToggle={onToggle}
+                      onToggleBackup={onToggleBackup}
                     />
                   </div>
                 )}
@@ -227,6 +298,7 @@ export function GameSelector({
         <div className="flex gap-4">
           <span>Catalog: {games.length}</span>
           <span>Filtered: {allFilteredGames.length}</span>
+          <span className="text-primary/70">Backups: {backupGames.length}</span>
         </div>
         <div className="flex items-center gap-2">
           <Layers className="w-3 h-3" />

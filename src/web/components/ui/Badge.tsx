@@ -19,6 +19,7 @@ const badgeVariants = cva(
         preprod: "border-transparent bg-purple-500/20 text-purple-500 hover:bg-purple-500/30",
         prod: "border-transparent bg-red-500/20 text-red-500 hover:bg-red-500/30",
         success: "border-transparent bg-emerald-500/20 text-emerald-500",
+        amber: "border-transparent bg-amber-500/20 text-amber-500",
         pending: "border-transparent bg-yellow-500/20 text-yellow-500",
         running: "border-transparent bg-blue-500/20 text-blue-500 animate-pulse",
       },

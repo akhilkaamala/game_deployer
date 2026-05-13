@@ -185,28 +185,54 @@ export async function runRemoteToRemoteRsync(
   sourcePath: string,
   targetPath: string,
   dryRun: boolean = false,
+  onProgress?: (percent: number) => void,
 ): Promise<{ stdout: string; stderr: string }> {
   const tempLocalDir = path.join(os.tmpdir(), `deploy_${Date.now()}`);
 
   try {
     await fs.promises.mkdir(tempLocalDir, { recursive: true });
 
-    // 1. Pull from source to local temp (Always real pull to get source state for comparison)
+    // 1. Pull from source to local temp
     const pullArgs = [
       "-az",
       "--delete",
+      "--info=progress2",
       "-e",
       `ssh -i "${sourceServer.key}" -o StrictHostKeyChecking=no${sourceServer.port ? ` -p ${sourceServer.port}` : ""}`,
       `${sshTarget(sourceServer)}:${sourcePath}/`,
       `${tempLocalDir}/`,
     ];
-    await execFilePromise("rsync", pullArgs, { maxBuffer: 1024 * 1024 * 10 });
 
-    // 2. Push from local temp to target (Simulated if dryRun is true)
+    let lastStdout = "";
+    const pullResult = await new Promise<{ stdout: string; stderr: string }>(
+      (resolve, reject) => {
+        const child = spawn("rsync", pullArgs);
+        activeProcesses.add(child);
+        let stdout = "";
+        let stderr = "";
+        child.stdout.on("data", (data) => {
+          const chunk = data.toString();
+          stdout += chunk;
+          const match = chunk.match(/(\d+)%/);
+          if (match && onProgress) {
+            onProgress(Math.floor(Number.parseInt(match[1], 10) * 0.5));
+          }
+        });
+        child.stderr.on("data", (data) => (stderr += data.toString()));
+        child.on("close", (code) => {
+          activeProcesses.delete(child);
+          if (code === 0) resolve({ stdout, stderr });
+          else reject(new Error(`Source pull failed with code ${code}: ${stderr}`));
+        });
+      },
+    );
+
+    // 2. Push from local temp to target
     const pushArgs = [
       "-az",
       "--no-t",
       "--delete",
+      "--info=progress2",
       dryRun ? "-n" : null,
       "-e",
       `ssh -i "${targetServer.key}" -o StrictHostKeyChecking=no${targetServer.port ? ` -p ${targetServer.port}` : ""}`,
@@ -214,10 +240,33 @@ export async function runRemoteToRemoteRsync(
       `${sshTarget(targetServer)}:${targetPath}/`,
     ].filter(Boolean) as string[];
 
-    const result = await execFilePromise("rsync", pushArgs, {
-      maxBuffer: 1024 * 1024 * 10,
-    });
-    return result;
+    const pushResult = await new Promise<{ stdout: string; stderr: string }>(
+      (resolve, reject) => {
+        const child = spawn("rsync", pushArgs);
+        activeProcesses.add(child);
+        let stdout = "";
+        let stderr = "";
+        child.stdout.on("data", (data) => {
+          const chunk = data.toString();
+          stdout += chunk;
+          const match = chunk.match(/(\d+)%/);
+          if (match && onProgress) {
+            onProgress(50 + Math.floor(Number.parseInt(match[1], 10) * 0.5));
+          }
+        });
+        child.stderr.on("data", (data) => (stderr += data.toString()));
+        child.on("close", (code) => {
+          activeProcesses.delete(child);
+          if (code === 0) resolve({ stdout, stderr });
+          else reject(new Error(`Target push failed with code ${code}: ${stderr}`));
+        });
+      },
+    );
+
+    return {
+      stdout: pullResult.stdout + pushResult.stdout,
+      stderr: pullResult.stderr + pushResult.stderr,
+    };
   } finally {
     await fs.promises
       .rm(tempLocalDir, { recursive: true, force: true })

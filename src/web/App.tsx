@@ -37,17 +37,23 @@ import {
   Terminal as TerminalIcon,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "./lib/utils";
+
+import { ContentFolderCard } from "./components/ui/ContentFolderCard";
 
 type DeployState = "idle" | "loading" | "done" | "error";
 
 export function App() {
   const initialPrefs = loadPrefs();
   const [config, setConfig] = useState<ConfigResponse | null>(null);
-  const [sourceEnv, setSourceEnv] = useState<DeployEnvironment>(initialPrefs.defaultSourceEnv as any);
-  const [targetEnv, setTargetEnv] = useState<DeployEnvironment>(initialPrefs.defaultTargetEnv as any);
+  const [sourceEnv, setSourceEnv] = useState<DeployEnvironment>(
+    initialPrefs.defaultSourceEnv as any,
+  );
+  const [targetEnv, setTargetEnv] = useState<DeployEnvironment>(
+    initialPrefs.defaultTargetEnv as any,
+  );
   const [retain, setRetain] = useState<string>("");
-  const [gameBackupEnabled, setGameBackupEnabled] = useState<boolean>(initialPrefs.gameBackupDefault);
-  const [jsonBackupEnabled, setJsonBackupEnabled] = useState<boolean>(initialPrefs.jsonBackupDefault);
+  const [backupGames, setBackupGames] = useState<string[]>([]);
   const [gamePaths, setGamePaths] = useState<string[]>([]);
   const [dryRun, setDryRun] = useState<boolean>(initialPrefs.dryRunDefault);
   const [logs, setLogs] = useState<
@@ -100,22 +106,28 @@ export function App() {
     );
   }, []);
 
+  const toggleBackup = useCallback((game: string) => {
+    setBackupGames((prev) =>
+      prev.includes(game) ? prev.filter((g) => g !== game) : [...prev, game],
+    );
+  }, []);
+
   const selectAll = useCallback((games: string[]) => {
     setGamePaths(games);
   }, []);
 
   const deselectAll = useCallback(() => {
     setGamePaths([]);
+    setBackupGames([]);
   }, []);
 
   const handleResetAll = useCallback(() => {
     setSourceEnv("dev");
     setTargetEnv("qa");
     setGamePaths([]);
+    setBackupGames([]);
     setLogs([]);
     setState("idle");
-    setGameBackupEnabled(false);
-    setJsonBackupEnabled(false);
     // Reset steps to initial pending state
     setSteps([
       {
@@ -181,12 +193,11 @@ export function App() {
       if (p.defaultSourceEnv) setSourceEnv(p.defaultSourceEnv as any);
       if (p.defaultTargetEnv) setTargetEnv(p.defaultTargetEnv as any);
       setDryRun(p.dryRunDefault);
-      setGameBackupEnabled(p.gameBackupDefault);
-      setJsonBackupEnabled(p.jsonBackupDefault);
-      
+      setBackupGames([]);
+
       // Handle auto-select change
       if (p.autoSelectFirstGame && config?.gameFolderMap) {
-        setGamePaths(prev => {
+        setGamePaths((prev) => {
           if (prev.length === 0) {
             const keys = Object.keys(config.gameFolderMap);
             return keys.length > 0 ? [keys[0]] : [];
@@ -298,8 +309,7 @@ export function App() {
         retain: Number.isInteger(retainNumber) ? retainNumber : null,
         dryRun,
         gamePath: gamePaths.length > 0 ? gamePaths.join(",") : null,
-        skipGameBackup: !gameBackupEnabled,
-        skipJsonBackup: !jsonBackupEnabled,
+        backupGames: backupGames.length > 0 ? backupGames.join(",") : null,
       });
 
       setState("done");
@@ -402,6 +412,20 @@ export function App() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.05 }}
+          >
+            <ContentFolderCard
+              isSelected={gamePaths.includes("content")}
+              isBackupEnabled={backupGames.includes("content")}
+              onToggle={() => toggleGame("content")}
+              onToggleBackup={() => toggleBackup("content")}
+              isDeploying={state === "loading"}
+            />
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
           >
             <Card className="border-white/10 bg-white/5 backdrop-blur-md">
@@ -420,23 +444,47 @@ export function App() {
                   </Badge>
                 </div>
               </CardHeader>
-              <CardContent className="h-[400px]">
+              <CardContent className="h-[800px]">
                 <GameSelector
                   games={gamesList}
                   selectedGames={gamePaths}
+                  backupGames={backupGames}
                   gameFolderMap={config?.gameFolderMap ?? {}}
                   onToggle={toggleGame}
+                  onToggleBackup={toggleBackup}
                   onSelectAll={selectAll}
                   onDeselectAll={deselectAll}
+                  onSelectBackups={(games) => setBackupGames(games)}
+                  onDeselectBackups={() => setBackupGames([])}
                 />
               </CardContent>
             </Card>
           </motion.div>
+        </div>
+
+        {/* Right Column: Status & Monitoring */}
+        <div className="xl:col-span-5 space-y-8">
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <DeploymentSummary
+              source={sourceEnv}
+              target={targetEnv}
+              selectedGames={gamePaths}
+              backupGames={backupGames}
+              retention={retain}
+              gameFolderMap={config?.gameFolderMap ?? {}}
+              serverBasePaths={config?.serverBasePaths ?? {}}
+              jsonRootPaths={config?.jsonRootPaths ?? {}}
+            />
+          </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
           >
             <Card className="border-white/10 bg-white/5 backdrop-blur-md">
               <CardHeader>
@@ -446,43 +494,7 @@ export function App() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-center justify-between p-4 rounded-lg bg-white/5 border border-white/5 transition-colors hover:bg-white/10">
-                    <div className="flex flex-col gap-1">
-                      <span className="text-sm font-medium text-zinc-200">
-                        Game Folder Backup
-                      </span>
-                      <span className="text-[10px] text-zinc-500">
-                        Snapshot of game assets
-                      </span>
-                    </div>
-                    <Checkbox
-                      checked={gameBackupEnabled}
-                      onCheckedChange={(checked) =>
-                        setGameBackupEnabled(!!checked)
-                      }
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between p-4 rounded-lg bg-white/5 border border-white/5 transition-colors hover:bg-white/10">
-                    <div className="flex flex-col gap-1">
-                      <span className="text-sm font-medium text-zinc-200">
-                        JSON Manifest Backup
-                      </span>
-                      <span className="text-[10px] text-zinc-500">
-                        Snapshot of JSON config
-                      </span>
-                    </div>
-                    <Checkbox
-                      checked={jsonBackupEnabled}
-                      onCheckedChange={(checked) =>
-                        setJsonBackupEnabled(!!checked)
-                      }
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t border-white/10">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 mb-1">
                       <Database className="w-4 h-4 text-primary" />
@@ -499,7 +511,6 @@ export function App() {
                         )}
                         value={retain}
                         onChange={(e) => setRetain(e.target.value)}
-                        disabled={!gameBackupEnabled && !jsonBackupEnabled}
                         className="bg-zinc-900/50 border-white/10 h-11 focus:ring-primary/50"
                       />
                       <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] text-zinc-500 font-bold">
@@ -554,32 +565,11 @@ export function App() {
               </CardContent>
             </Card>
           </motion.div>
-        </div>
-
-        {/* Right Column: Status & Monitoring */}
-        <div className="xl:col-span-5 space-y-8">
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <DeploymentSummary
-              source={sourceEnv}
-              target={targetEnv}
-              selectedGames={gamePaths}
-              gameBackupEnabled={gameBackupEnabled}
-              jsonBackupEnabled={jsonBackupEnabled}
-              retention={retain}
-              gameFolderMap={config?.gameFolderMap ?? {}}
-              serverBasePaths={config?.serverBasePaths ?? {}}
-              jsonRootPaths={config?.jsonRootPaths ?? {}}
-            />
-          </motion.div>
 
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
           >
             <Card className="border-white/10 bg-white/5 backdrop-blur-md">
               <CardHeader className="border-b border-white/10 bg-white/5">

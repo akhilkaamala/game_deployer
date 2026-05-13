@@ -119,7 +119,8 @@ export function LogViewer({
     });
 
     // 2. Second pass: apply colors
-    const processed = logs.map((log) => {
+    const filteredLogs = logs.filter((l) => !l.message.includes("[PROGRESS]"));
+    const processed = filteredLogs.map((log) => {
       let logColor = null;
 
       const deployMatch = log.message.match(/^Deploying\s+(.+)$/i);
@@ -155,11 +156,72 @@ export function LogViewer({
     return { processedLogs: processed, gameMap: gameToColor };
   }, [logs, selectedGames]);
 
+  const [simProgress, setSimProgress] = React.useState<Record<string, number>>(
+    {},
+  );
+
   useEffect(() => {
     checkOverflow();
     window.addEventListener("resize", checkOverflow);
     return () => window.removeEventListener("resize", checkOverflow);
   }, [gameMap, checkOverflow]);
+
+  useEffect(() => {
+    if (state !== "loading") {
+      setSimProgress({});
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setSimProgress((prev) => {
+        const next = { ...prev };
+        Array.from(gameMap.keys()).forEach((gName) => {
+          const lowerGName = gName.toLowerCase();
+          const gLogs = logs.filter((l) =>
+            l.message.toLowerCase().includes(lowerGName),
+          );
+          const progressLog = gLogs
+            .filter((l) => l.message.includes("[PROGRESS]"))
+            .pop();
+          const lastMsg = gLogs[gLogs.length - 1]?.message.toLowerCase() || "";
+
+          const isComp = gLogs.some((l) => {
+            const m = l.message.toLowerCase();
+            return m.includes("syncing completed") || m.includes("success");
+          });
+
+          if (isComp) {
+            next[gName] = 100;
+          } else if (progressLog) {
+            const match = progressLog.message.match(/(\d+)%/);
+            if (match) {
+              next[gName] = Number.parseInt(match[1], 10);
+            }
+          } else {
+            const isAct = gLogs.some((l) => {
+              const m = l.message.toLowerCase();
+              return (
+                m.includes(`deploying`) ||
+                m.includes("syncing from") ||
+                m.includes("connecting") ||
+                m.includes("invalidating") ||
+                m.includes("taking")
+              );
+            });
+
+            if (isAct) {
+              // No simulation for syncing - wait for real [PROGRESS] logs
+            } else {
+              next[gName] = 0;
+            }
+          }
+        });
+        return next;
+      });
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [state, logs, gameMap]);
 
   return (
     <div className="flex flex-col h-full bg-zinc-950 rounded-xl border border-white/10 overflow-hidden shadow-xl">
@@ -167,7 +229,7 @@ export function LogViewer({
         <div className="flex items-center gap-6 overflow-hidden flex-1">
           <div className="flex items-center gap-2 shrink-0">
             <Terminal className="w-4 h-4 text-zinc-400" />
-            <span className="text-xs font-mono font-medium text-zinc-300 uppercase tracking-wider">
+            <span className="text-xs font-mono font-medium text-zinc-300 uppercase tracking-wider mr-1">
               Terminal
             </span>
           </div>
@@ -182,32 +244,87 @@ export function LogViewer({
                 className="flex items-center gap-6 overflow-x-auto no-scrollbar py-1 scroll-smooth"
               >
                 <div className="w-px h-4 bg-white/10 shrink-0" />
-                {Array.from(gameMap.entries()).map(([name, colors], index) => (
-                  <React.Fragment key={name}>
-                    {index > 0 && (
-                      <div className="w-px h-3 bg-white/20 shrink-0" />
-                    )}
-                    <div
-                      className="flex items-center gap-2 shrink-0 animate-in fade-in slide-in-from-left-2 duration-300"
-                      title={name}
-                    >
+                {Array.from(gameMap.entries()).map(([name, colors], index) => {
+                  const lowerName = name.toLowerCase();
+                  const gLogs = logs.filter((l) =>
+                    l.message.toLowerCase().includes(lowerName),
+                  );
+                  const isCompleted = gLogs.some((l) => {
+                    const m = l.message.toLowerCase();
+                    return (
+                      m.includes("syncing completed") || m.includes("success")
+                    );
+                  });
+                  const isActive =
+                    !isCompleted &&
+                    gLogs.some((l) => {
+                      const m = l.message.toLowerCase();
+                      return (
+                        m.includes(`deploying`) ||
+                        m.includes("syncing from") ||
+                        m.includes("connecting") ||
+                        m.includes("invalidating") ||
+                        m.includes("taking")
+                      );
+                    });
+
+                  const stepProgress = Math.floor(simProgress[name] || 0);
+                  const lastMsgLower =
+                    gLogs[gLogs.length - 1]?.message.toLowerCase() || "";
+                  const showPercentage =
+                    (lastMsgLower.includes("syncing") ||
+                      lastMsgLower.includes("[progress]")) &&
+                    !lastMsgLower.includes("completed");
+
+                  return (
+                    <React.Fragment key={name}>
+                      {index > 0 && (
+                        <div className="w-px h-3 bg-white/20 shrink-0" />
+                      )}
                       <div
                         className={cn(
-                          "w-2 h-2 rounded-full shadow-sm",
-                          colors.bg,
+                          "flex items-center gap-2 shrink-0 animate-in fade-in slide-in-from-left-2 duration-300 transition-opacity",
+                          !isActive && !isCompleted && state === "loading"
+                            ? "opacity-40"
+                            : "opacity-100",
                         )}
-                      />
-                      <span
-                        className={cn(
-                          "text-xs font-bold uppercase tracking-wider",
-                          colors.text,
-                        )}
+                        title={name}
                       >
-                        {name}
-                      </span>
-                    </div>
-                  </React.Fragment>
-                ))}
+                        <div
+                          className={cn(
+                            "w-2 h-2 rounded-full shadow-sm relative",
+                            colors.bg,
+                            isActive &&
+                              state === "loading" &&
+                              "animate-pulse ring-4 ring-white/10",
+                          )}
+                        >
+                          {isCompleted && (
+                            <motion.div
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              className="absolute -inset-1 rounded-full border border-white/50 bg-white/20"
+                            />
+                          )}
+                        </div>
+                        <span
+                          className={cn(
+                            "text-xs font-bold uppercase tracking-wider flex items-center gap-1.5",
+                            colors.text,
+                          )}
+                        >
+                          {name}
+                          {showPercentage &&
+                            (stepProgress > 0 || isCompleted) && (
+                              <span className="text-[9px] opacity-70 tabular-nums">
+                                ({stepProgress}%)
+                              </span>
+                            )}
+                        </span>
+                      </div>
+                    </React.Fragment>
+                  );
+                })}
                 {/* Spacer at the end for the persistent indicator */}
                 <div className="w-4 shrink-0" />
               </div>
@@ -332,7 +449,7 @@ export function LogViewer({
             </span>
             <span
               className={cn(
-                "break-all",
+                "break-all whitespace-pre-wrap",
                 log.level === "error"
                   ? "text-red-300"
                   : log.colorClass || "text-zinc-200",
