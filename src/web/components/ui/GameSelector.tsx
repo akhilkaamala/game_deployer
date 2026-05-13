@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from "react";
 import {
   Search,
-  ChevronRight,
   Filter,
   ChevronDown,
   Layers,
@@ -10,7 +9,7 @@ import { Input } from "./Input";
 import { ScrollArea } from "./ScrollArea";
 import { Badge } from "./Badge";
 import { Button } from "./Button";
-import { GameCarousel } from "./GameCarousel";
+import { GameGrid } from "./GameGrid";
 import { cn } from "../../lib/utils";
 
 interface GameSelectorProps {
@@ -110,11 +109,11 @@ export function GameSelector({
   return (
     <div className="flex flex-col h-full gap-4">
       <div className="flex items-center gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <div className="relative flex-1 group/search">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-600 transition-colors group-focus-within/search:text-primary" />
           <Input
             placeholder="Search games..."
-            className="pl-9 bg-white/5 border-white/10"
+            className="h-9 pl-9 bg-white/[0.02] border-white/5 focus:border-primary/50 focus:ring-0 transition-all text-xs"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -122,7 +121,7 @@ export function GameSelector({
         <Button
           variant="outline"
           size="sm"
-          className="h-10 border-white/10 bg-white/5 whitespace-nowrap"
+          className="h-9 border-white/5 bg-white/[0.03] text-[10px] font-bold uppercase tracking-tight hover:bg-white/10 transition-all px-4"
           onClick={handleSelectAll}
         >
           {allSelected ? "Deselect All" : "Select Result"}
@@ -130,7 +129,7 @@ export function GameSelector({
       </div>
 
       <ScrollArea className="flex-1 -mx-2 px-2">
-        <div className="space-y-4 py-2">
+        <div className="space-y-3 py-2">
           {Object.entries(filteredGroups).map(([category, groupGames]) => {
             const isExpanded = expandedGroups.includes(category);
             const groupSelectedCount = groupGames.filter((g) =>
@@ -139,44 +138,39 @@ export function GameSelector({
             const [mainCategory, subCategory] = category.split(" - ");
 
             return (
-              <div key={category} className="space-y-2">
-                <div className="flex items-center justify-between w-full p-2 rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 transition-colors group">
+              <div key={category} className="space-y-1">
+                <div className="flex items-center justify-between w-full px-2 py-1.5 rounded-lg bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] transition-colors group/header">
                   <div
                     className="flex items-center gap-2 cursor-pointer flex-1"
                     onClick={() => toggleGroup(category)}
                   >
                     <ChevronDown
                       className={cn(
-                        "w-4 h-4 text-zinc-500 transition-transform",
+                        "w-3.5 h-3.5 text-zinc-600 transition-transform duration-300",
                         !isExpanded && "-rotate-90",
                       )}
                     />
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-primary/80">
+                      <span className="text-[10px] font-black uppercase tracking-[0.1em] text-primary/70">
                         {mainCategory}
                       </span>
                       {subCategory && (
                         <>
-                          <span className="text-zinc-700">/</span>
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+                          <span className="text-zinc-800 text-[10px]">/</span>
+                          <span className="text-[10px] font-black uppercase tracking-[0.1em] text-zinc-400">
                             {subCategory}
                           </span>
                         </>
                       )}
                     </div>
-                    <Badge
-                      variant="outline"
-                      className="h-4 text-[10px] bg-white/5 font-mono"
-                    >
-                      {groupGames.length}
-                    </Badge>
+                    <div className="w-5 h-5 flex items-center justify-center bg-white/10 rounded-full border border-white/5 shadow-inner">
+                      <span className="text-[10px] font-mono font-black text-zinc-300">{groupGames.length}</span>
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-2 px-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 px-2 text-[9px] font-bold uppercase tracking-wider text-zinc-500 hover:text-primary hover:bg-primary/10 transition-all"
+                  <div className="flex items-center gap-1.5 px-1 opacity-0 group-hover/header:opacity-100 transition-opacity">
+                    <button
+                      className="text-[9px] font-black uppercase tracking-tight text-zinc-500 hover:text-primary transition-colors px-1"
                       onClick={(e) => {
                         e.stopPropagation();
                         const newSelected = [
@@ -185,13 +179,11 @@ export function GameSelector({
                         onSelectAll(newSelected);
                       }}
                     >
-                      Select All
-                    </Button>
-                    <div className="w-px h-3 bg-white/10" />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 px-2 text-[9px] font-bold uppercase tracking-wider text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                      ALL
+                    </button>
+                    <div className="w-px h-2 bg-white/10" />
+                    <button
+                      className="text-[9px] font-black uppercase tracking-tight text-zinc-500 hover:text-red-400 transition-colors px-1"
                       onClick={(e) => {
                         e.stopPropagation();
                         const newSelected = selectedGames.filter(
@@ -200,22 +192,19 @@ export function GameSelector({
                         onSelectAll(newSelected);
                       }}
                     >
-                      Deselect
-                    </Button>
+                      NONE
+                    </button>
                     {groupSelectedCount > 0 && (
-                      <Badge
-                        variant="success"
-                        className="h-4 text-[9px] px-1.5 font-bold ml-2"
-                      >
-                        {groupSelectedCount}
-                      </Badge>
+                      <div className="w-4 h-4 flex items-center justify-center bg-primary rounded-full ml-1 shadow-[0_0_10px_rgba(var(--primary-rgb),0.3)]">
+                        <span className="text-[9px] font-black text-primary-foreground">{groupSelectedCount}</span>
+                      </div>
                     )}
                   </div>
                 </div>
 
                 {isExpanded && (
-                  <div className="py-2">
-                    <GameCarousel
+                  <div className="py-1">
+                    <GameGrid
                       games={groupGames}
                       selectedGames={selectedGames}
                       onToggle={onToggle}

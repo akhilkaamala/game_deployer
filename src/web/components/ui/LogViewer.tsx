@@ -56,6 +56,14 @@ export function LogViewer({
     }
   }, [logs, autoScroll]);
 
+  const handleLegendWheel = (e: React.WheelEvent) => {
+    if (Math.abs(e.deltaX) < Math.abs(e.deltaY)) {
+      if (legendRef.current) {
+        legendRef.current.scrollLeft += e.deltaY;
+      }
+    }
+  };
+
   const checkOverflow = React.useCallback(() => {
     if (legendRef.current) {
       const { scrollLeft, scrollWidth, clientWidth } = legendRef.current;
@@ -154,7 +162,7 @@ export function LogViewer({
   }, [gameMap, checkOverflow]);
 
   return (
-    <div className="flex flex-col h-full bg-zinc-950 rounded-xl border border-white/10 overflow-hidden shadow-2xl">
+    <div className="flex flex-col h-full bg-zinc-950 rounded-xl border border-white/10 overflow-hidden shadow-xl">
       <div className="flex items-center justify-between px-4 py-2 border-b border-white/10 bg-white/5 backdrop-blur-sm">
         <div className="flex items-center gap-6 overflow-hidden flex-1">
           <div className="flex items-center gap-2 shrink-0">
@@ -170,6 +178,7 @@ export function LogViewer({
               <div
                 ref={legendRef}
                 onScroll={checkOverflow}
+                onWheel={handleLegendWheel}
                 className="flex items-center gap-6 overflow-x-auto no-scrollbar py-1 scroll-smooth"
               >
                 <div className="w-px h-4 bg-white/10 shrink-0" />
@@ -209,7 +218,7 @@ export function LogViewer({
                   showOverflow ? "opacity-100" : "opacity-0",
                 )}
               >
-                <div className="flex items-center bg-black rounded-full h-8 px-2 border border-white/20 shadow-[0_0_20px_rgba(0,0,0,0.8)] backdrop-blur-md">
+                <div className="flex items-center bg-black/50 rounded-full h-8 px-2 border border-white/10 shadow-md backdrop-blur-md">
                   <div className="flex items-center h-4">
                     <div
                       className="w-[30px] h-full overflow-hidden relative shrink-0"

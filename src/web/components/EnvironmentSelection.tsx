@@ -62,39 +62,45 @@ export function EnvironmentSelection({
   }, [checkStatus]);
 
   return (
-    <div className="relative p-6 rounded-2xl border border-white/10 bg-[#070a11] overflow-hidden group/container shadow-2xl">
+    <div className="relative p-6 rounded-2xl border border-white/5 bg-zinc-950/40 backdrop-blur-xl overflow-hidden group/container shadow-2xl">
       <div className="relative z-10 flex flex-col gap-8">
-        <div className="flex items-center justify-between border-b border-white/5 pb-5">
-          <div className="flex flex-col gap-0.5">
-            <h2 className="text-lg font-bold tracking-tight text-white flex items-center gap-2">
-              <div className="w-1 h-4 bg-blue-500 rounded-full" />
-              Environment Pipeline
-            </h2>
-            <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-widest">
-              Automated Deployment Orchestrator
-            </p>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="flex flex-col items-end">
-              <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between border-b border-white/5 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/[0.03] border border-white/10">
+              <span className="text-[10px] font-black text-zinc-500 tracking-widest uppercase">Pipeline</span>
+              <span className="text-zinc-700 font-light">/</span>
+              <span className="text-[10px] font-black text-primary tracking-widest uppercase">Deploy</span>
+            </div>
+            
+            <div className="h-4 w-px bg-white/10" />
+            
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-tight">Status:</span>
+              <div className="flex items-center gap-1.5">
                 <div
                   className={cn(
-                    "w-1.5 h-1.5 rounded-full",
+                    "w-1.5 h-1.5 rounded-full shadow-[0_0_8px_rgba(var(--primary-rgb),0.5)]",
                     isDeploying
-                      ? "bg-blue-500 animate-pulse"
-                      : "bg-emerald-500/50",
+                      ? "bg-primary animate-pulse"
+                      : "bg-emerald-500/60",
                   )}
                 />
                 <span
                   className={cn(
                     "text-[10px] font-bold uppercase tracking-tight",
-                    isDeploying ? "text-blue-400" : "text-zinc-500",
+                    isDeploying ? "text-primary" : "text-emerald-500/80",
                   )}
                 >
-                  {isDeploying ? "Active Transfer" : "System Standby"}
+                  {isDeploying ? "Transferring" : "Standby"}
                 </span>
               </div>
             </div>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <Badge variant="outline" className="bg-white/5 border-white/10 text-[9px] font-bold px-2 py-0">
+              V2.4.0
+            </Badge>
           </div>
         </div>
 

@@ -1,5 +1,252 @@
 [
   {
+    "id": "1778655511627",
+    "timestamp": "2026-05-13T06:58:31.627Z",
+    "reports": [
+      {
+        "environment": "preprod",
+        "deploymentVersion": "v2026-05-13T06:39:12.174Z",
+        "sourcePath": "/home/blazeagrqa/blazeagr-qa-client/majestic_kingdom",
+        "targetPath": "/home/blazeagrclient-s3/blazeagrclient-s3/majestic_kingdom",
+        "targetJsonPath": "/home/blazeagrclient-s3/blazeagrclient-s3/content/locale/slot/pharaoh",
+        "gamePath": "majestic_kingdom",
+        "status": "success",
+        "host": "3.73.207.133",
+        "cloudfront": {
+          "attempted": false,
+          "status": "skipped",
+          "reason": "distribution_not_configured"
+        },
+        "backupCreated": {
+          "path": "/home/blazeagrclient-s3/blazeagrclient-s3/majestic_kingdom_13MayBkp-2026",
+          "timestamp": "2026-05-13T06:40:03.791Z",
+          "environment": "preprod",
+          "deploymentVersion": "v2026-05-13T06:39:12.174Z",
+          "deploymentStatus": "successful"
+        },
+        "rollbackPointsAvailable": 1,
+        "deployedAt": "2026-05-13T06:43:04.230Z",
+        "artifacts": "majestic_kingdom",
+        "syncType": "remote-to-remote"
+      },
+      {
+        "environment": "preprod",
+        "deploymentVersion": "v2026-05-13T06:43:04.230Z",
+        "sourcePath": "/home/blazeagrqa/blazeagr-qa-client/the_happy_tent",
+        "targetPath": "/home/blazeagrclient-s3/blazeagrclient-s3/the_happy_tent",
+        "targetJsonPath": "/home/blazeagrclient-s3/blazeagrclient-s3/content/locale/slot/farm",
+        "gamePath": "the_happy_tent",
+        "status": "success",
+        "host": "3.73.207.133",
+        "cloudfront": {
+          "attempted": false,
+          "status": "skipped",
+          "reason": "distribution_not_configured"
+        },
+        "backupCreated": {
+          "path": "/home/blazeagrclient-s3/blazeagrclient-s3/the_happy_tent_13MayBkp-2026",
+          "timestamp": "2026-05-13T06:43:54.144Z",
+          "environment": "preprod",
+          "deploymentVersion": "v2026-05-13T06:43:04.230Z",
+          "deploymentStatus": "successful"
+        },
+        "rollbackPointsAvailable": 1,
+        "deployedAt": "2026-05-13T06:47:16.388Z",
+        "artifacts": "the_happy_tent",
+        "syncType": "remote-to-remote"
+      },
+      {
+        "environment": "preprod",
+        "deploymentVersion": "v2026-05-13T06:47:16.388Z",
+        "sourcePath": "/home/blazeagrqa/blazeagr-qa-client/the_pirate_king",
+        "targetPath": "/home/blazeagrclient-s3/blazeagrclient-s3/the_pirate_king",
+        "targetJsonPath": "/home/blazeagrclient-s3/blazeagrclient-s3/content/locale/slot/farm",
+        "gamePath": "the_pirate_king",
+        "status": "success",
+        "host": "3.73.207.133",
+        "cloudfront": {
+          "attempted": false,
+          "status": "skipped",
+          "reason": "distribution_not_configured"
+        },
+        "backupCreated": {
+          "path": "/home/blazeagrclient-s3/blazeagrclient-s3/the_pirate_king_13MayBkp-2026",
+          "timestamp": "2026-05-13T06:48:14.229Z",
+          "environment": "preprod",
+          "deploymentVersion": "v2026-05-13T06:47:16.388Z",
+          "deploymentStatus": "successful"
+        },
+        "rollbackPointsAvailable": 1,
+        "deployedAt": "2026-05-13T06:50:37.587Z",
+        "artifacts": "the_pirate_king",
+        "syncType": "remote-to-remote"
+      },
+      {
+        "environment": "preprod",
+        "deploymentVersion": "v2026-05-13T06:50:37.587Z",
+        "sourcePath": "/home/blazeagrqa/blazeagr-qa-client/indian_wonders",
+        "targetPath": "/home/blazeagrclient-s3/blazeagrclient-s3/indian_wonders",
+        "targetJsonPath": "/home/blazeagrclient-s3/blazeagrclient-s3/content/locale/slot/farm",
+        "gamePath": "indian_wonders",
+        "status": "success",
+        "host": "3.73.207.133",
+        "cloudfront": {
+          "attempted": false,
+          "status": "skipped",
+          "reason": "distribution_not_configured"
+        },
+        "backupCreated": {
+          "path": "/home/blazeagrclient-s3/blazeagrclient-s3/indian_wonders_13MayBkp-2026",
+          "timestamp": "2026-05-13T06:51:27.142Z",
+          "environment": "preprod",
+          "deploymentVersion": "v2026-05-13T06:50:37.587Z",
+          "deploymentStatus": "successful"
+        },
+        "rollbackPointsAvailable": 1,
+        "deployedAt": "2026-05-13T06:53:51.113Z",
+        "artifacts": "indian_wonders",
+        "syncType": "remote-to-remote"
+      },
+      {
+        "environment": "preprod",
+        "deploymentVersion": "v2026-05-13T06:53:51.113Z",
+        "sourcePath": "/home/blazeagrqa/blazeagr-qa-client/lost_treasures_of_egypt",
+        "targetPath": "/home/blazeagrclient-s3/blazeagrclient-s3/lost_treasures_of_egypt",
+        "targetJsonPath": "/home/blazeagrclient-s3/blazeagrclient-s3/content/locale/slot/farm",
+        "gamePath": "lost_treasures_of_egypt",
+        "status": "success",
+        "host": "3.73.207.133",
+        "cloudfront": {
+          "attempted": false,
+          "status": "skipped",
+          "reason": "distribution_not_configured"
+        },
+        "backupCreated": {
+          "path": "/home/blazeagrclient-s3/blazeagrclient-s3/lost_treasures_of_egypt_13MayBkp-2026",
+          "timestamp": "2026-05-13T06:54:47.168Z",
+          "environment": "preprod",
+          "deploymentVersion": "v2026-05-13T06:53:51.113Z",
+          "deploymentStatus": "successful"
+        },
+        "rollbackPointsAvailable": 1,
+        "deployedAt": "2026-05-13T06:58:31.603Z",
+        "artifacts": "lost_treasures_of_egypt",
+        "syncType": "remote-to-remote"
+      }
+    ],
+    "summary": {
+      "total": 5,
+      "success": 5,
+      "failed": 0
+    }
+  },
+  {
+    "id": "1778654271071",
+    "timestamp": "2026-05-13T06:37:51.071Z",
+    "reports": [
+      {
+        "environment": "preprod",
+        "deploymentVersion": "v2026-05-13T06:34:36.256Z",
+        "sourcePath": "/home/blazeagrqa/blazeagr-qa-client/glittering_gold",
+        "targetPath": "/home/blazeagrclient-s3/blazeagrclient-s3/glittering_gold",
+        "targetJsonPath": "/home/blazeagrclient-s3/blazeagrclient-s3/content/locale/slot/pharaoh",
+        "gamePath": "glittering_gold",
+        "status": "success",
+        "host": "3.73.207.133",
+        "cloudfront": {
+          "attempted": false,
+          "status": "skipped",
+          "reason": "distribution_not_configured"
+        },
+        "backupCreated": {
+          "path": "/home/blazeagrclient-s3/blazeagrclient-s3/glittering_gold_13MayBkp-2026",
+          "timestamp": "2026-05-13T06:35:25.580Z",
+          "environment": "preprod",
+          "deploymentVersion": "v2026-05-13T06:34:36.256Z",
+          "deploymentStatus": "successful"
+        },
+        "rollbackPointsAvailable": 1,
+        "deployedAt": "2026-05-13T06:37:51.064Z",
+        "artifacts": "glittering_gold",
+        "syncType": "remote-to-remote"
+      }
+    ],
+    "summary": {
+      "total": 1,
+      "success": 1,
+      "failed": 0
+    }
+  },
+  {
+    "id": "1778653992121",
+    "timestamp": "2026-05-13T06:33:12.121Z",
+    "reports": [
+      {
+        "environment": "preprod",
+        "deploymentVersion": "v2026-05-13T06:29:31.522Z",
+        "sourcePath": "/home/blazeagrqa/blazeagr-qa-client/mayan_mores",
+        "targetPath": "/home/blazeagrclient-s3/blazeagrclient-s3/mayan_mores",
+        "targetJsonPath": "/home/blazeagrclient-s3/blazeagrclient-s3/content/locale/slot/pharaoh",
+        "gamePath": "mayan_mores",
+        "status": "success",
+        "host": "3.73.207.133",
+        "cloudfront": {
+          "attempted": false,
+          "status": "skipped",
+          "reason": "distribution_not_configured"
+        },
+        "backupCreated": {
+          "path": "/home/blazeagrclient-s3/blazeagrclient-s3/mayan_mores_13MayBkp-2026",
+          "timestamp": "2026-05-13T06:30:23.802Z",
+          "environment": "preprod",
+          "deploymentVersion": "v2026-05-13T06:29:31.522Z",
+          "deploymentStatus": "successful"
+        },
+        "rollbackPointsAvailable": 1,
+        "deployedAt": "2026-05-13T06:33:12.119Z",
+        "artifacts": "mayan_mores",
+        "syncType": "remote-to-remote"
+      }
+    ],
+    "summary": {
+      "total": 1,
+      "success": 1,
+      "failed": 0
+    }
+  },
+  {
+    "id": "1778653751492",
+    "timestamp": "2026-05-13T06:29:11.492Z",
+    "reports": [
+      {
+        "gamePath": "Mayan Mores",
+        "status": "failed",
+        "error": "Process was manually terminated."
+      }
+    ],
+    "summary": {
+      "total": 1,
+      "success": 0,
+      "failed": 1
+    }
+  },
+  {
+    "id": "1778653720710",
+    "timestamp": "2026-05-13T06:28:40.710Z",
+    "reports": [
+      {
+        "gamePath": "Mayan Mores",
+        "status": "failed",
+        "error": "Process was manually terminated."
+      }
+    ],
+    "summary": {
+      "total": 1,
+      "success": 0,
+      "failed": 1
+    }
+  },
+  {
     "id": "1778562443663",
     "timestamp": "2026-05-12T05:07:23.663Z",
     "reports": [
