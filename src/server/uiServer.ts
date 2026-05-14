@@ -138,6 +138,10 @@ function parseBody(req: http.IncomingMessage): Promise<Record<string, any>> {
   });
 }
 
+let cachedSizes: Record<string, number> = {};
+let lastFetch = 0;
+const CACHE_TTL = 1000 * 60 * 5; // 5 minutes
+
 function extractGameCatalog(config: any): string[] {
   const gameBase = config.paths?.sourcePath;
   if (!gameBase) return [];
@@ -159,6 +163,21 @@ function contentType(filePath: string): string {
   if (filePath.endsWith(".png")) return "image/png";
   if (filePath.endsWith(".ico")) return "image/x-icon";
   return "text/html; charset=utf-8";
+}
+
+async function getFolderSize(folderPath: string): Promise<number> {
+  return new Promise((resolve) => {
+    // -s: summary, -k: kilobytes
+    exec(`du -sk "${folderPath}"`, (err, stdout) => {
+      if (err) return resolve(0);
+      const match = stdout.trim().match(/^(\d+)/);
+      if (match) {
+        resolve(Number.parseInt(match[1], 10) * 1024); // Convert KB to bytes
+      } else {
+        resolve(0);
+      }
+    });
+  });
 }
 
 async function serveFile(
@@ -378,7 +397,7 @@ async function handleApi(
 
   if (req.method === "POST" && url.pathname === "/api/games") {
     const body = await parseBody(req);
-    const { name, path: gamePath, jsonExt } = body;
+    const { name, path: gamePath, jsonExt, image } = body;
     if (!name || !gamePath || !jsonExt)
       return sendJson(res, 400, {
         error: "name, path, and jsonExt are required",
@@ -387,7 +406,7 @@ async function handleApi(
     if (!raw.gameFolderMap) raw.gameFolderMap = {};
     if (raw.gameFolderMap[name])
       return sendJson(res, 409, { error: `Game '${name}' already exists` });
-    raw.gameFolderMap[name] = { path: gamePath, jsonExt };
+    raw.gameFolderMap[name] = { path: gamePath, jsonExt, image };
     fs.writeFileSync(configPath, JSON.stringify(raw, null, 2));
     return sendJson(res, 201, {
       message: `Game '${name}' created`,
@@ -402,17 +421,19 @@ async function handleApi(
     const raw = JSON.parse(fs.readFileSync(configPath, "utf-8"));
     if (!raw.gameFolderMap?.[gameName])
       return sendJson(res, 404, { error: `Game '${gameName}' not found` });
-    const { newName, path: gamePath, jsonExt } = body;
+    const { newName, path: gamePath, jsonExt, image } = body;
     if (newName && newName !== gameName) {
       raw.gameFolderMap[newName] = {
         path: gamePath || raw.gameFolderMap[gameName].path,
         jsonExt: jsonExt || raw.gameFolderMap[gameName].jsonExt,
+        image: image !== undefined ? image : raw.gameFolderMap[gameName].image,
       };
       delete raw.gameFolderMap[gameName];
     } else {
       raw.gameFolderMap[gameName] = {
         path: gamePath || raw.gameFolderMap[gameName].path,
         jsonExt: jsonExt || raw.gameFolderMap[gameName].jsonExt,
+        image: image !== undefined ? image : raw.gameFolderMap[gameName].image,
       };
     }
     fs.writeFileSync(configPath, JSON.stringify(raw, null, 2));
@@ -474,6 +495,74 @@ async function handleApi(
         ]),
       ),
     });
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/game-sizes") {
+    const now = Date.now();
+    if (now - lastFetch < CACHE_TTL && Object.keys(cachedSizes).length > 0) {
+      return sendJson(res, 200, cachedSizes);
+    }
+
+    const config = loadConfig({ rootDir, cliRetain: null });
+    const gameBase = config.paths?.sourcePath;
+    if (!gameBase) return sendJson(res, 200, {});
+
+    const absoluteBase = path.isAbsolute(gameBase)
+      ? gameBase
+      : path.resolve(rootDir, gameBase);
+
+    const sizes: Record<string, number> = {};
+
+    if (fs.existsSync(absoluteBase)) {
+      const entries = fs.readdirSync(absoluteBase, { withFileTypes: true });
+      await Promise.all(
+        entries
+          .filter((entry) => entry.isDirectory())
+          .map(async (entry) => {
+            const folderPath = path.join(absoluteBase, entry.name);
+            sizes[entry.name] = await getFolderSize(folderPath);
+          }),
+      );
+    } else {
+      const devServer = config.servers?.dev;
+      if (devServer) {
+        try {
+          const resolvedKey = path.resolve(rootDir, devServer.key);
+          // Normalize path: remove trailing slash if exists
+          const remoteBase = gameBase.endsWith("/")
+            ? gameBase.slice(0, -1)
+            : gameBase;
+
+          logger.info(`Fetching remote game sizes from ${devServer.host}...`);
+          const { stdout } = await runSsh(
+            { ...devServer, key: resolvedKey },
+            `du -sk ${remoteBase}/*/ 2>/dev/null`,
+          );
+
+          if (stdout) {
+            const lines = stdout.split("\n");
+            for (const line of lines) {
+              const match = line.trim().match(/^(\d+)\s+(.+)$/);
+              if (match) {
+                const kb = Number.parseInt(match[1], 10);
+                const fullPath = match[2].replace(/\/$/, "");
+                const folderName = path.basename(fullPath);
+                sizes[folderName] = kb * 1024;
+              }
+            }
+          }
+        } catch (err: any) {
+          logger.error(`Failed to fetch remote game sizes: ${err.message}`);
+        }
+      }
+    }
+
+    if (Object.keys(sizes).length > 0) {
+      cachedSizes = sizes;
+      lastFetch = now;
+    }
+
+    return sendJson(res, 200, sizes);
   }
 
   if (req.method === "GET" && url.pathname === "/api/backups") {
@@ -650,7 +739,7 @@ async function handleApi(
           skipGameBackup: skipThisGameBackup,
           dryRun,
         });
-        deploymentReports.push(report);
+        deploymentReports.push({ ...report, sourceEnvironment: sourceEnv });
         if (report.status !== "success") currentGameStatus = "FAILED";
       } catch (error: any) {
         logger.error(
@@ -660,6 +749,8 @@ async function handleApi(
           gamePath: singleGamePath,
           status: "failed",
           error: error.message,
+          sourceEnvironment: sourceEnv,
+          environment: targetEnv,
         });
         currentGameStatus = "FAILED";
       } finally {
@@ -674,9 +765,6 @@ async function handleApi(
             ? "CONTENT FOLDER"
             : singleGamePath || "CORE ASSETS";
 
-        if (currentGameStatus === "SUCCESS") {
-          logger.info(`Syncing Completed for ${displayName}`);
-        }
         logger.info(`${displayName} : ${currentGameStatus} [${durationStr}]`);
 
         stats.push({
@@ -688,17 +776,6 @@ async function handleApi(
     }
 
     await saveHistory(rootDir, deploymentReports);
-    if (stats.length > 0) {
-      logger.info(
-        `\n┌${"─".repeat(50)}┐\n│ DEPLOYMENT SUMMARY${" ".repeat(32)}│\n├${"─".repeat(50)}┤\n${stats
-          .map((s) => {
-            const statusStr =
-              s.status === "SUCCESS" ? "✅ SUCCESS" : "❌ FAILED";
-            return `│ ${s.name.padEnd(22)}: ${s.duration.padEnd(10)} [${statusStr.padEnd(10)}] │`;
-          })
-          .join("\n")}\n└${"─".repeat(50)}┘\n`,
-      );
-    }
 
     return sendJson(res, 200, {
       deployment:

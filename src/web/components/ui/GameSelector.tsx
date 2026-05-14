@@ -6,6 +6,8 @@ import {
   Layers,
   Database,
   Archive,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import { Input } from "./Input";
 import { ScrollArea } from "./ScrollArea";
@@ -19,6 +21,8 @@ interface GameSelectorProps {
   selectedGames: string[];
   backupGames: string[];
   gameFolderMap: Record<string, any>;
+  gameSizes?: Record<string, number>;
+  loadingSizes?: boolean;
   onToggle: (game: string) => void;
   onToggleBackup: (game: string) => void;
   onSelectAll: (games: string[]) => void;
@@ -32,6 +36,8 @@ export function GameSelector({
   selectedGames,
   backupGames,
   gameFolderMap,
+  gameSizes = {},
+  loadingSizes = false,
   onToggle,
   onToggleBackup,
   onSelectAll,
@@ -103,6 +109,14 @@ export function GameSelector({
     }
   };
 
+  const handleExpandAll = () => {
+    setExpandedGroups(Object.keys(filteredGroups));
+  };
+
+  const handleCollapseAll = () => {
+    setExpandedGroups([]);
+  };
+
   const toggleGroup = (category: string) => {
     setExpandedGroups((prev) =>
       prev.includes(category)
@@ -142,6 +156,24 @@ export function GameSelector({
           >
             <Layers className="w-4 h-4" />
           </button>
+
+          <div className="flex items-center gap-1 bg-white/[0.02] border border-white/5 rounded-lg p-1">
+            <button
+              onClick={handleExpandAll}
+              className="p-1.5 rounded-md hover:bg-white/5 text-zinc-600 hover:text-white transition-all"
+              title="Expand All"
+            >
+              <Maximize2 className="w-3.5 h-3.5" />
+            </button>
+            <div className="w-px h-3 bg-white/5" />
+            <button
+              onClick={handleCollapseAll}
+              className="p-1.5 rounded-md hover:bg-white/5 text-zinc-600 hover:text-white transition-all"
+              title="Collapse All"
+            >
+              <Minimize2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -277,6 +309,9 @@ export function GameSelector({
                       games={groupGames}
                       selectedGames={selectedGames}
                       backupGames={backupGames}
+                      gameFolderMap={gameFolderMap}
+                      gameSizes={gameSizes}
+                      loadingSizes={loadingSizes}
                       onToggle={onToggle}
                       onToggleBackup={onToggleBackup}
                     />

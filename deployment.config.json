@@ -50,223 +50,278 @@
   "gameFolderMap": {
     "Ancient Guards Of Egypt": {
       "path": "ancient_guardsofegypt",
-      "jsonExt": "/slot/nordic"
+      "jsonExt": "/slot/nordic",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/slotreel5nordict12_97.png"
     },
     "Aqua Slot": {
       "path": "aqua_slot",
-      "jsonExt": "/slot/nordic"
+      "jsonExt": "/slot/nordic",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/slotreel5nordict6_97.png"
     },
     "Diamond Squash": {
       "path": "diamond_squash",
-      "jsonExt": "/slot/nordic"
+      "jsonExt": "/slot/nordic",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/slotreel5nordict9_97.png"
     },
     "Fengshen Returns": {
       "path": "fengshen_returns",
-      "jsonExt": "/slot/nordic"
+      "jsonExt": "/slot/nordic",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/slotreel5nordict10_97.png"
     },
     "Octoplays": {
       "path": "octoplays",
-      "jsonExt": "/slot/nordic"
+      "jsonExt": "/slot/nordic",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/slotreel5nordict11_97.png"
     },
     "Rise Of Devils Plus": {
       "path": "raise_of_devils_plus",
-      "jsonExt": "/slot/nordic"
+      "jsonExt": "/slot/nordic",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/slotreel5nordict5_97.png"
     },
     "Wild Wild Buffalo": {
       "path": "wild_wild_buffalo",
-      "jsonExt": "/slot/nordic"
+      "jsonExt": "/slot/nordic",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/slotreel5nordict7_97.png"
     },
     "Lucky Dragon": {
       "path": "lucky_dragon",
-      "jsonExt": "/slot/nordic"
+      "jsonExt": "/slot/nordic",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/slotreel5nordict8_97.png"
     },
     "Doodle Disco Wonderland": {
       "path": "doodle_disco_wonderland",
-      "jsonExt": "/slot/nordic"
+      "jsonExt": "/slot/nordic",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/dj_doodle_disco_wonderland_97.png"
     },
     "Wild Wickets": {
       "path": "wildwickets",
-      "jsonExt": "/slot/nordic"
+      "jsonExt": "/slot/nordic",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/slotreel5nordict1_97.png"
     },
     "Rise Of Devils": {
       "path": "riseofdevils",
-      "jsonExt": "/slot/nordic"
+      "jsonExt": "/slot/nordic",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/slotreel5nordict2_97.png"
     },
     "Muddy Masters": {
       "path": "muddymasters",
-      "jsonExt": "/slot/nordic"
+      "jsonExt": "/slot/nordic",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/slotreel5nordict4_97.png"
     },
     "Mayan Mores": {
       "path": "mayan_mores",
-      "jsonExt": "/slot/pharaoh"
+      "jsonExt": "/slot/pharaoh",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/slotreel5pharaoht3.png"
     },
     "Glittering Gold": {
       "path": "glittering_gold",
-      "jsonExt": "/slot/pharaoh"
+      "jsonExt": "/slot/pharaoh",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/slotreel5pharaoht4.png"
     },
     "Majestic Kingdom": {
       "path": "majestic_kingdom",
-      "jsonExt": "/slot/pharaoh"
+      "jsonExt": "/slot/pharaoh",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/slotreel5pharaoht5_97.png"
     },
     "Jungle Safari": {
       "path": "junglesafari",
-      "jsonExt": "/slot/pharaoh"
+      "jsonExt": "/slot/pharaoh",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/slotreel5pharaoht2.png"
     },
     "Forbidden Fortune": {
       "path": "forbiddenfortune",
-      "jsonExt": "/slot/pharaoh"
+      "jsonExt": "/slot/pharaoh",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/slotreel5pharaoht1.png"
     },
     "Golden Pharaoh Vault": {
       "path": "golden_vault",
-      "jsonExt": "/slot/pharaoh"
+      "jsonExt": "/slot/pharaoh",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/golden_pharaoh_vault_93.png"
     },
     "The Happy Tent": {
       "path": "the_happy_tent",
-      "jsonExt": "/slot/farm"
+      "jsonExt": "/slot/farm",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/slotreel5farmt3.png"
     },
     "The Pirate King": {
       "path": "the_pirate_king",
-      "jsonExt": "/slot/farm"
+      "jsonExt": "/slot/farm",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/slotreel5farmt2.png"
     },
     "Indian Wonders": {
       "path": "indian_wonders",
-      "jsonExt": "/slot/farm"
+      "jsonExt": "/slot/farm",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/slotreel5farmt4.png"
     },
     "Lost Treasures Of Egypt": {
       "path": "lost_treasures_of_egypt",
-      "jsonExt": "/slot/farm"
+      "jsonExt": "/slot/farm",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/slotreel5farmt1.png"
     },
     "Hot Chica": {
       "path": "hotchicka",
-      "jsonExt": "/slot/china"
+      "jsonExt": "/slot/china",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/slotreel5hotchickat1.png"
     },
     "Eat Street": {
       "path": "eatstreet",
-      "jsonExt": "/slot/china"
+      "jsonExt": "/slot/china",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/slotreel5chinat1.png"
     },
     "Frisky Football": {
       "path": "friskyfootball",
-      "jsonExt": "/slot/greek"
+      "jsonExt": "/slot/greek",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/slotreel5nordict3.png"
     },
     "Spooky Splash": {
       "path": "spookysplash",
-      "jsonExt": "/slot/greek"
+      "jsonExt": "/slot/greek",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/slotreel5greekt1.png"
     },
     "K9 Kingdom": {
       "path": "k9kingdom",
-      "jsonExt": "/slot/buffalo"
+      "jsonExt": "/slot/buffalo",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/k9kingdom_97.png"
     },
     "K9 Kingdom XMAS": {
       "path": "k9kingdom_xmas",
-      "jsonExt": "/slot/buffalo"
+      "jsonExt": "/slot/buffalo",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/k9kingdom_xmas_97.png"
     },
     "7 Up 7 Down": {
       "path": "luckyseven",
-      "jsonExt": "/draw/luckyseven"
+      "jsonExt": "/draw/luckyseven",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/luckyseven.png"
     },
     "Abc Spins": {
       "path": "abcspin",
-      "jsonExt": "/draw/abcspin"
+      "jsonExt": "/draw/abcspin",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/abcspin.png"
     },
     "Crackerjack": {
       "path": "triplechance",
-      "jsonExt": "/draw/triplechance"
+      "jsonExt": "/draw/triplechance",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/triplechance.png"
     },
     "Double Chance": {
       "path": "doublechance",
-      "jsonExt": "/draw/doublechance"
+      "jsonExt": "/draw/doublechance",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/doublechance.png"
     },
     "Megawheel": {
       "path": "megawheel",
-      "jsonExt": "/draw/megawheel"
+      "jsonExt": "/draw/megawheel",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/megawheel.png"
     },
     "Spin 2 Win Turbo": {
       "path": "spin2winproturbo",
-      "jsonExt": "/draw/spin2winproturbo"
+      "jsonExt": "/draw/spin2winproturbo",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/spin2winproturbo.png"
     },
     "Spin N Win": {
       "path": "spin2win",
-      "jsonExt": "/draw/spinnwin"
+      "jsonExt": "/draw/spinnwin",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/spin2winpro.png"
     },
     "Triple Ball (Bowl of Fortune)": {
       "path": "colorballpro",
-      "jsonExt": "/draw/colorballpro"
+      "jsonExt": "/draw/colorballpro",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/colorballpro.png"
     },
     "Triple Dice": {
       "path": "tripledice",
-      "jsonExt": "/draw/tripledice"
+      "jsonExt": "/draw/tripledice",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/tripledice.png"
     },
     "Wheel Of Victory": {
       "path": "wovpro",
-      "jsonExt": "/draw/wovpro"
+      "jsonExt": "/draw/wovpro",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/wovpro.png"
     },
     "Zodiac Spin": {
       "path": "zodiacspin",
-      "jsonExt": "/draw/zodiacspin"
+      "jsonExt": "/draw/zodiacspin",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/zodiacspin.png"
     },
     "Andar Bahar": {
       "path": "abclassicstraight",
-      "jsonExt": "/table/andarbahar"
+      "jsonExt": "/table/andarbahar",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/abclassicstraight.png"
     },
     "Baccarat": {
       "path": "baccarat",
-      "jsonExt": "/table/baccarat"
+      "jsonExt": "/table/baccarat",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/baccarat.png"
     },
     "Blackjack": {
       "path": "blackjack",
-      "jsonExt": "/table/blackjack"
+      "jsonExt": "/table/blackjack",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/blackjack.png"
     },
     "Dragon vs Tiger": {
       "path": "dragontiger",
-      "jsonExt": "/table/dragontiger"
+      "jsonExt": "/table/dragontiger",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/dragontiger.png"
     },
     "American Roulette": {
       "path": "americanroulette36",
-      "jsonExt": "/roulette/americanroulette36"
+      "jsonExt": "/roulette/americanroulette36",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/americanroulette36.png"
     },
     "French Roulette": {
       "path": "rouletteneighbour",
-      "jsonExt": "/roulette/rouletteneighbour"
+      "jsonExt": "/roulette/rouletteneighbour",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/rouletteneighbour.png"
     },
     "Mini Roulette": {
       "path": "roulette12",
-      "jsonExt": "/roulette/roulette12"
+      "jsonExt": "/roulette/roulette12",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/roulette12.png"
     },
     "European Roulette": {
       "path": "spin36",
-      "jsonExt": "/roulette/spin36"
+      "jsonExt": "/roulette/spin36",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/roulette36.png"
     },
     "Star Chip Roulette": {
       "path": "starroulette",
-      "jsonExt": "/roulette/starroulette"
+      "jsonExt": "/roulette/starroulette",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/starroulette.png"
     },
     "City Roulette": {
       "path": "trade-roulette",
-      "jsonExt": "/trading/trading_roulette"
+      "jsonExt": "/trading/trading_roulette",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/traderoulette.png"
     },
     "Trade Crash": {
       "path": "trade-crash",
-      "jsonExt": "/trading/trading_crash"
+      "jsonExt": "/trading/trading_crash",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/tradecrash.png"
     },
     "Hilo": {
       "path": "hilo",
-      "jsonExt": "/trading/trading_hilo"
+      "jsonExt": "/trading/trading_hilo",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/bullgaming.png"
     },
     "City Roulette Xmas": {
       "path": "trade-roulette-xmas",
-      "jsonExt": "/trading/trading_roulette"
+      "jsonExt": "/trading/trading_roulette",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/santascityroulette.png"
     },
     "Trade Crash Xmas": {
       "path": "trade-crash-xmas",
-      "jsonExt": "/trading/trading_crash"
+      "jsonExt": "/trading/trading_crash",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/santascrashingbull.png"
     },
     "Hilo Xmas": {
       "path": "hilo-xmas",
-      "jsonExt": "/trading/trading_hilo"
+      "jsonExt": "/trading/trading_hilo",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/santashilo.png"
     },
     "Frog Jump": {
       "path": "frog_jump",
-      "jsonExt": "/cocos/frog_jump"
+      "jsonExt": "/cocos/frog_jump",
+      "image": "https://devblazeagrsite.run12345.com/assets/images/games/frog_storm_survival_95.png"
     }
   }
 }

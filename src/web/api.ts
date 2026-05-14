@@ -40,3 +40,7 @@ export function stopProcess() {
     method: "POST",
   });
 }
+
+export function fetchGameSizes() {
+  return request<Record<string, number>>(`/api/game-sizes?t=${Date.now()}`);
+}

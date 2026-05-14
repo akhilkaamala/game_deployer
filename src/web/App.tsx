@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState, useCallback } from "react";
-import { deploy, fetchConfig, stopProcess } from "./api";
+import { deploy, fetchConfig, stopProcess, fetchGameSizes } from "./api";
 import type { ConfigResponse, DeployEnvironment } from "./types";
 import { Layout } from "./components/Layout";
 import { EnvironmentSelection } from "./components/EnvironmentSelection";
@@ -59,6 +59,8 @@ export function App() {
   const [logs, setLogs] = useState<
     { level: string; message: string; timestamp?: string }[]
   >([]);
+  const [gameSizes, setGameSizes] = useState<Record<string, number>>({});
+  const [loadingSizes, setLoadingSizes] = useState(false);
   const [state, setState] = useState<DeployState>("idle");
 
   // Stepper state
@@ -169,6 +171,12 @@ export function App() {
           },
         ]);
       });
+
+    setLoadingSizes(true);
+    fetchGameSizes()
+      .then(setGameSizes)
+      .catch((err) => console.error("Failed to fetch game sizes:", err))
+      .finally(() => setLoadingSizes(false));
   }, []);
 
   // Initial load
@@ -450,6 +458,8 @@ export function App() {
                   selectedGames={gamePaths}
                   backupGames={backupGames}
                   gameFolderMap={config?.gameFolderMap ?? {}}
+                  gameSizes={gameSizes}
+                  loadingSizes={loadingSizes}
                   onToggle={toggleGame}
                   onToggleBackup={toggleBackup}
                   onSelectAll={selectAll}

@@ -17,7 +17,7 @@ interface EnvironmentNodeProps {
 export function EnvironmentNode({
   name,
   type,
-  status = "unknown",
+  status = "offline",
   isSelected,
   isDeploying,
   isDisabled,
@@ -146,7 +146,7 @@ export function EnvironmentNode({
                   )}
                 />
                 <span className="text-[9px] font-bold uppercase tracking-tight">
-                  {status}
+                  {status === "unknown" ? "offline" : status}
                 </span>
               </div>
             </div>

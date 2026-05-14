@@ -1,5 +1,119 @@
 [
   {
+    "id": "1778671793065",
+    "timestamp": "2026-05-13T11:29:53.065Z",
+    "reports": [
+      {
+        "environment": "qa",
+        "deploymentVersion": "v2026-05-13T11:21:23.305Z",
+        "sourcePath": "/home/blazeagrdev/blzAgrDev_S3client/games/k9kingdom",
+        "targetPath": "/home/blazeagrqa/blazeagr-qa-client/k9kingdom",
+        "gamePath": "k9kingdom",
+        "status": "success",
+        "host": "18.142.2.196",
+        "cloudfront": {
+          "attempted": true,
+          "status": "success",
+          "distributionId": "E2XV2YWOZQAK35",
+          "output": "{\n    \"Location\": \"https://cloudfront.amazonaws.com/2020-05-31/distribution/E2XV2YWOZQAK35/invalidation/IP2TSS9KCE6C1CPLMYL7CBAED\",\n    \"Invalidation\": {\n        \"Id\": \"IP2TSS9KCE6C1CPLMYL7CBAED\",\n        \"Status\": \"InProgress\",\n        \"CreateTime\": \"2026-05-13T11:23:38.923000+00:00\",\n        \"InvalidationBatch\": {\n            \"Paths\": {\n                \"Quantity\": 1,\n                \"Items\": [\n                    \"/*\"\n                ]\n            },\n            \"CallerReference\": \"cli-1778671417-454562\"\n        }\n    }\n}"
+        },
+        "backupCreated": {
+          "path": "/home/blazeagrqa/blazeagr-qa-client/k9kingdom_13MayBkp-2026",
+          "timestamp": "2026-05-13T11:22:08.361Z",
+          "environment": "qa",
+          "deploymentVersion": "v2026-05-13T11:21:23.305Z",
+          "deploymentStatus": "successful"
+        },
+        "rollbackPointsAvailable": 1,
+        "deployedAt": "2026-05-13T11:23:39.293Z",
+        "artifacts": "k9kingdom",
+        "syncType": "remote-to-remote"
+      },
+      {
+        "environment": "qa",
+        "deploymentVersion": "v2026-05-13T11:23:39.293Z",
+        "sourcePath": "/home/blazeagrdev/blzAgrDev_S3client/games/k9kingdom_xmas",
+        "targetPath": "/home/blazeagrqa/blazeagr-qa-client/k9kingdom_xmas",
+        "gamePath": "k9kingdom_xmas",
+        "status": "success",
+        "host": "18.142.2.196",
+        "cloudfront": {
+          "attempted": true,
+          "status": "success",
+          "distributionId": "E2XV2YWOZQAK35",
+          "output": "{\n    \"Location\": \"https://cloudfront.amazonaws.com/2020-05-31/distribution/E2XV2YWOZQAK35/invalidation/IAAJ5N8ZL6GXEVVFAFGFPF7TQP\",\n    \"Invalidation\": {\n        \"Id\": \"IAAJ5N8ZL6GXEVVFAFGFPF7TQP\",\n        \"Status\": \"InProgress\",\n        \"CreateTime\": \"2026-05-13T11:25:53.956000+00:00\",\n        \"InvalidationBatch\": {\n            \"Paths\": {\n                \"Quantity\": 1,\n                \"Items\": [\n                    \"/*\"\n                ]\n            },\n            \"CallerReference\": \"cli-1778671552-300471\"\n        }\n    }\n}"
+        },
+        "backupCreated": {
+          "path": "/home/blazeagrqa/blazeagr-qa-client/k9kingdom_xmas_13MayBkp-2026",
+          "timestamp": "2026-05-13T11:24:22.354Z",
+          "environment": "qa",
+          "deploymentVersion": "v2026-05-13T11:23:39.293Z",
+          "deploymentStatus": "successful"
+        },
+        "rollbackPointsAvailable": 1,
+        "deployedAt": "2026-05-13T11:25:54.333Z",
+        "artifacts": "k9kingdom_xmas",
+        "syncType": "remote-to-remote"
+      },
+      {
+        "environment": "qa",
+        "deploymentVersion": "v2026-05-13T11:25:54.333Z",
+        "sourcePath": "/home/blazeagrdev/blzAgrDev_S3client/games/content",
+        "targetPath": "/home/blazeagrqa/blazeagr-qa-client/content",
+        "gamePath": "content",
+        "status": "success",
+        "host": "18.142.2.196",
+        "cloudfront": {
+          "attempted": true,
+          "status": "success",
+          "distributionId": "E2XV2YWOZQAK35",
+          "output": "{\n    \"Location\": \"https://cloudfront.amazonaws.com/2020-05-31/distribution/E2XV2YWOZQAK35/invalidation/ID8LKK5HLUWJUZGE0U6O9TI84J\",\n    \"Invalidation\": {\n        \"Id\": \"ID8LKK5HLUWJUZGE0U6O9TI84J\",\n        \"Status\": \"InProgress\",\n        \"CreateTime\": \"2026-05-13T11:29:52.691000+00:00\",\n        \"InvalidationBatch\": {\n            \"Paths\": {\n                \"Quantity\": 1,\n                \"Items\": [\n                    \"/*\"\n                ]\n            },\n            \"CallerReference\": \"cli-1778671791-314699\"\n        }\n    }\n}"
+        },
+        "backupCreated": null,
+        "rollbackPointsAvailable": 1,
+        "deployedAt": "2026-05-13T11:29:53.062Z",
+        "artifacts": "content",
+        "syncType": "remote-to-remote"
+      }
+    ],
+    "summary": {
+      "total": 3,
+      "success": 3,
+      "failed": 0
+    }
+  },
+  {
+    "id": "1778669480270",
+    "timestamp": "2026-05-13T10:51:20.270Z",
+    "reports": [
+      {
+        "environment": "qa",
+        "deploymentVersion": "v2026-05-13T10:47:19.676Z",
+        "sourcePath": "/home/blazeagrdev/blzAgrDev_S3client/games/content",
+        "targetPath": "/home/blazeagrqa/blazeagr-qa-client/content",
+        "gamePath": "content",
+        "status": "success",
+        "host": "18.142.2.196",
+        "cloudfront": {
+          "attempted": true,
+          "status": "success",
+          "distributionId": "E2XV2YWOZQAK35",
+          "output": "{\n    \"Location\": \"https://cloudfront.amazonaws.com/2020-05-31/distribution/E2XV2YWOZQAK35/invalidation/I5KLLT7VG5FD04ZBHSVB08FE9J\",\n    \"Invalidation\": {\n        \"Id\": \"I5KLLT7VG5FD04ZBHSVB08FE9J\",\n        \"Status\": \"InProgress\",\n        \"CreateTime\": \"2026-05-13T10:51:19.899000+00:00\",\n        \"InvalidationBatch\": {\n            \"Paths\": {\n                \"Quantity\": 1,\n                \"Items\": [\n                    \"/*\"\n                ]\n            },\n            \"CallerReference\": \"cli-1778669478-162629\"\n        }\n    }\n}"
+        },
+        "backupCreated": null,
+        "rollbackPointsAvailable": 1,
+        "deployedAt": "2026-05-13T10:51:20.267Z",
+        "artifacts": "content",
+        "syncType": "remote-to-remote"
+      }
+    ],
+    "summary": {
+      "total": 1,
+      "success": 1,
+      "failed": 0
+    }
+  },
+  {
     "id": "1778668374782",
     "timestamp": "2026-05-13T10:32:54.782Z",
     "reports": [

@@ -83,9 +83,17 @@ export function Layout({ children }: LayoutProps) {
         if (res.ok) {
           const data = await res.json();
           setEnvStatuses(data.environments || []);
+        } else {
+          // If server returns error, mark all as offline
+          setEnvStatuses((prev) =>
+            prev.map((env) => ({ ...env, status: "offline" })),
+          );
         }
-      } catch {
-        /* silent */
+      } catch (err) {
+        // On network error or timeout, mark all as offline
+        setEnvStatuses((prev) =>
+          prev.map((env) => ({ ...env, status: "offline" })),
+        );
       }
     };
     // Slight delay so the server has time to fully start
@@ -125,12 +133,18 @@ export function Layout({ children }: LayoutProps) {
         )}
       >
         <div className="flex items-center gap-3 px-6 h-16 border-b border-border">
-          <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <Command className="w-5 h-5 text-primary-foreground" />
+          <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-zinc-900 border border-white/5 flex items-center justify-center overflow-hidden group/logo transition-all hover:border-primary/50 hover:shadow-[0_0_15px_rgba(59,130,246,0.2)]">
+            <img
+              src="/favicon.svg"
+              alt="Logo"
+              className="w-[70%] h-[70%] object-contain"
+            />
           </div>
           {!isSidebarCollapsed && (
             <div className="flex flex-col">
-              <span className="text-sm font-bold tracking-tight">AG BLAZE</span>
+              <span className="text-sm font-black tracking-tight text-white">
+                AG BLAZE
+              </span>
               <span className="text-[10px] text-muted-foreground uppercase font-medium">
                 DevOps Center
               </span>

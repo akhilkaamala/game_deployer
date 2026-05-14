@@ -22,6 +22,7 @@ import { getApiUrl } from "../api";
 interface GameEntry {
   path: string;
   jsonExt: string;
+  image?: string;
 }
 
 interface GameMap {
@@ -69,8 +70,8 @@ const CATEGORY_JSON_PREFIX: Record<string, string> = {
   Trading: "/trading", Cocos: "/cocos",
 };
 
-const emptyGame: { name: string; path: string; jsonExt: string; category: string } = {
-  name: "", path: "", jsonExt: "", category: "Nordic",
+const emptyGame: { name: string; path: string; jsonExt: string; category: string; image: string } = {
+  name: "", path: "", jsonExt: "", category: "Nordic", image: "",
 };
 
 export function GamesManager() {
@@ -81,7 +82,7 @@ export function GamesManager() {
   const [modal, setModal] = useState<{
     mode: "create" | "edit";
     originalName: string;
-    form: { name: string; path: string; jsonExt: string; category: string };
+    form: { name: string; path: string; jsonExt: string; category: string; image: string };
   } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -113,7 +114,7 @@ export function GamesManager() {
 
   const openEdit = (name: string, entry: GameEntry) => {
     const category = getCategory(entry.jsonExt);
-    setModal({ mode: "edit", originalName: name, form: { name, path: entry.path, jsonExt: entry.jsonExt, category } });
+    setModal({ mode: "edit", originalName: name, form: { name, path: entry.path, jsonExt: entry.jsonExt, category, image: entry.image || "" } });
   };
 
   const updateForm = (key: string, value: string) => {
@@ -137,8 +138,8 @@ export function GamesManager() {
     try {
       const { mode, originalName, form } = modal;
       const payload = mode === "create"
-        ? { name: form.name, path: form.path, jsonExt: form.jsonExt }
-        : { newName: form.name, path: form.path, jsonExt: form.jsonExt };
+        ? { name: form.name, path: form.path, jsonExt: form.jsonExt, image: form.image }
+        : { newName: form.name, path: form.path, jsonExt: form.jsonExt, image: form.image };
 
       const res = await fetch(
         getApiUrl(mode === "create" ? "/api/games" : `/api/games/${encodeURIComponent(originalName)}`),
@@ -404,6 +405,18 @@ export function GamesManager() {
                     className="bg-zinc-900/50 border-white/10 font-mono text-xs"
                   />
                   <p className="text-[10px] text-zinc-600">Auto-filled from category. Edit manually if needed.</p>
+                </div>
+                
+                {/* Image URL */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Custom Image URL</label>
+                  <Input
+                    placeholder="e.g. https://.../k9_thumb.png"
+                    value={modal.form.image}
+                    onChange={(e) => updateForm("image", e.target.value)}
+                    className="bg-zinc-900/50 border-white/10 text-xs"
+                  />
+                  <p className="text-[10px] text-zinc-600">Optional. Overrides the default naming pattern.</p>
                 </div>
               </div>
 

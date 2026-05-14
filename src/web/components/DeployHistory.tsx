@@ -25,6 +25,7 @@ import { getApiUrl } from "../api";
 
 interface DeployReport {
   environment: string;
+  sourceEnvironment?: string;
   deploymentVersion: string;
   gamePath: string | null;
   status: string;
@@ -82,12 +83,15 @@ export function DeployHistory() {
     setModal({
       isOpen: true,
       title: "Clear History?",
-      description: "Are you sure you want to clear all deployment history? This action cannot be undone.",
+      description:
+        "Are you sure you want to clear all deployment history? This action cannot be undone.",
       type: "confirm",
       onConfirm: async () => {
-        setModal(prev => ({ ...prev, isOpen: false }));
+        setModal((prev) => ({ ...prev, isOpen: false }));
         try {
-          const res = await fetch(getApiUrl("/api/history"), { method: "DELETE" });
+          const res = await fetch(getApiUrl("/api/history"), {
+            method: "DELETE",
+          });
           if (res.ok) {
             setHistory([]);
           } else {
@@ -98,20 +102,21 @@ export function DeployHistory() {
             isOpen: true,
             title: "Clear Failed",
             description: err.message,
-            type: "error"
+            type: "error",
           });
         }
-      }
+      },
     });
   };
 
-  const filteredHistory = history.filter(entry => {
+  const filteredHistory = history.filter((entry) => {
     const q = searchQuery.toLowerCase();
     if (!entry.reports || !Array.isArray(entry.reports)) return false;
-    return entry.reports.some(r => 
-      (r.environment?.toLowerCase() || "").includes(q) || 
-      (r.gamePath?.toLowerCase() || "").includes(q) ||
-      (r.deploymentVersion?.toLowerCase() || "").includes(q)
+    return entry.reports.some(
+      (r) =>
+        (r.environment?.toLowerCase() || "").includes(q) ||
+        (r.gamePath?.toLowerCase() || "").includes(q) ||
+        (r.deploymentVersion?.toLowerCase() || "").includes(q),
     );
   });
 
@@ -124,7 +129,9 @@ export function DeployHistory() {
           </div>
           <div>
             <h2 className="text-xl font-bold tracking-tight">Deploy History</h2>
-            <p className="text-xs text-zinc-500">Review past deployment reports and status</p>
+            <p className="text-xs text-zinc-500">
+              Review past deployment reports and status
+            </p>
           </div>
         </div>
 
@@ -138,10 +145,19 @@ export function DeployHistory() {
               className="pl-10 w-64 bg-zinc-900/50 border-white/10"
             />
           </div>
-          <Button variant="outline" onClick={fetchHistory} disabled={loading} size="icon">
+          <Button
+            variant="outline"
+            onClick={fetchHistory}
+            disabled={loading}
+            size="icon"
+          >
             <RefreshCcw className={cn("w-4 h-4", loading && "animate-spin")} />
           </Button>
-          <Button variant="outline" onClick={handleClearHistory} className="gap-2 text-red-400 border-red-500/20 hover:bg-red-500/10">
+          <Button
+            variant="outline"
+            onClick={handleClearHistory}
+            className="gap-2 text-red-400 border-red-500/20 hover:bg-red-500/10"
+          >
             <Trash2 className="w-4 h-4" />
             Clear
           </Button>
@@ -161,34 +177,50 @@ export function DeployHistory() {
       ) : (
         <div className="space-y-4">
           {filteredHistory.map((entry) => (
-            <Card 
-              key={entry.id} 
+            <Card
+              key={entry.id}
               className={cn(
                 "overflow-hidden transition-all duration-300 border-white/5 bg-zinc-900/20 hover:border-white/10",
-                expandedId === entry.id && "border-primary/30 ring-1 ring-primary/20 bg-zinc-900/40"
+                expandedId === entry.id &&
+                  "border-primary/30 ring-1 ring-primary/20 bg-zinc-900/40",
               )}
             >
-              <div 
+              <div
                 className="p-4 cursor-pointer"
-                onClick={() => setExpandedId(expandedId === entry.id ? null : entry.id)}
+                onClick={() =>
+                  setExpandedId(expandedId === entry.id ? null : entry.id)
+                }
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className={cn(
-                      "p-2.5 rounded-xl",
-                      entry.summary.failed > 0 ? "bg-red-500/10 text-red-400" : "bg-emerald-500/10 text-emerald-400"
-                    )}>
-                      {entry.summary.failed > 0 ? <XCircle className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />}
+                    <div
+                      className={cn(
+                        "p-2.5 rounded-xl",
+                        entry.summary.failed > 0
+                          ? "bg-red-500/10 text-red-400"
+                          : "bg-emerald-500/10 text-emerald-400",
+                      )}
+                    >
+                      {entry.summary.failed > 0 ? (
+                        <XCircle className="w-5 h-5" />
+                      ) : (
+                        <CheckCircle2 className="w-5 h-5" />
+                      )}
                     </div>
                     <div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 mb-1">
                         <span className="font-bold text-sm">
-                          {entry.summary.total === 1 
-                            ? (entry.reports[0].gamePath || "Core Files") 
+                          {entry.summary.total === 1
+                            ? entry.reports[0].gamePath || "Core Files"
                             : `${entry.summary.total} Games Batch`}
                         </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 bg-white/5 px-1.5 py-0.5 rounded border border-white/5">
+                          {entry.reports[0].sourceEnvironment || "LOCAL"}
+                        </span>
                         <ArrowRight className="w-3 h-3 text-zinc-600" />
-                        <span className="text-xs font-bold uppercase tracking-widest text-primary">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-primary bg-primary/5 px-1.5 py-0.5 rounded border border-primary/10">
                           {entry.reports[0].environment}
                         </span>
                       </div>
@@ -203,11 +235,17 @@ export function DeployHistory() {
                           {new Date(entry.timestamp).toLocaleTimeString()}
                         </span>
                         <span className="w-1 h-1 rounded-full bg-zinc-700" />
-                        <span className={cn(
-                          "px-1.5 py-0.5 rounded text-[10px] font-black uppercase",
-                          entry.summary.failed > 0 ? "bg-red-500/20 text-red-400" : "bg-emerald-500/20 text-emerald-400"
-                        )}>
-                          {entry.summary.failed > 0 ? `${entry.summary.failed} Failed` : "Success"}
+                        <span
+                          className={cn(
+                            "px-1.5 py-0.5 rounded text-[10px] font-black uppercase",
+                            entry.summary.failed > 0
+                              ? "bg-red-500/20 text-red-400"
+                              : "bg-emerald-500/20 text-emerald-400",
+                          )}
+                        >
+                          {entry.summary.failed > 0
+                            ? `${entry.summary.failed} Failed`
+                            : "Success"}
                         </span>
                       </div>
                     </div>
@@ -215,10 +253,18 @@ export function DeployHistory() {
 
                   <div className="flex items-center gap-4">
                     <div className="hidden sm:flex flex-col items-end">
-                      <span className="text-[10px] text-zinc-500 uppercase font-black">Session ID</span>
-                      <span className="text-xs font-mono text-zinc-400">{entry.id.slice(-6)}</span>
+                      <span className="text-[10px] text-zinc-500 uppercase font-black">
+                        Session ID
+                      </span>
+                      <span className="text-xs font-mono text-zinc-400">
+                        {entry.id.slice(-6)}
+                      </span>
                     </div>
-                    {expandedId === entry.id ? <ChevronUp className="w-4 h-4 text-zinc-500" /> : <ChevronDown className="w-4 h-4 text-zinc-500" />}
+                    {expandedId === entry.id ? (
+                      <ChevronUp className="w-4 h-4 text-zinc-500" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 text-zinc-500" />
+                    )}
                   </div>
                 </div>
               </div>
@@ -234,29 +280,53 @@ export function DeployHistory() {
                     <div className="px-4 pb-4 pt-0 border-t border-white/5 bg-black/20">
                       <div className="space-y-3 mt-4">
                         {entry.reports.map((report, rIdx) => (
-                          <div key={rIdx} className="p-3 rounded-lg bg-white/5 border border-white/5">
+                          <div
+                            key={rIdx}
+                            className="p-3 rounded-lg bg-white/5 border border-white/5"
+                          >
                             <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center gap-2">
-                                <div className={cn(
-                                  "w-1.5 h-1.5 rounded-full",
-                                  report.status === "success" ? "bg-emerald-500" : "bg-red-500"
-                                )} />
-                                <span className="text-xs font-bold">{report.gamePath || "Core Files"}</span>
+                                <div
+                                  className={cn(
+                                    "w-1.5 h-1.5 rounded-full",
+                                    report.status === "success"
+                                      ? "bg-emerald-500"
+                                      : "bg-red-500",
+                                  )}
+                                />
+                                <span className="text-xs font-bold">
+                                  {report.gamePath || "Core Files"}
+                                </span>
                               </div>
-                              <span className="text-[10px] font-mono text-zinc-500">{report.deploymentVersion}</span>
+                              <span className="text-[10px] font-mono text-zinc-500">
+                                {report.deploymentVersion}
+                              </span>
                             </div>
-                            
+
                             <div className="grid grid-cols-2 gap-4 text-[11px]">
                               <div>
-                                <p className="text-zinc-500 uppercase tracking-tighter mb-1 font-black">Target</p>
-                                <div className="flex items-center gap-1.5 text-zinc-300">
-                                  <Server className="w-3 h-3" />
-                                  {report.environment?.toUpperCase() || "UNKNOWN"}
+                                <p className="text-zinc-500 uppercase tracking-tighter mb-1 font-black">
+                                  Source → Target
+                                </p>
+                                <div className="flex items-center gap-1.5 text-zinc-300 font-bold">
+                                  <span className="text-zinc-500">
+                                    {report.sourceEnvironment?.toUpperCase() ||
+                                      "LOCAL"}
+                                  </span>
+                                  <ArrowRight className="w-3 h-3 text-zinc-700" />
+                                  <span className="text-primary">
+                                    {report.environment?.toUpperCase() ||
+                                      "OFFLINE"}
+                                  </span>
                                 </div>
                               </div>
                               <div>
-                                <p className="text-zinc-500 uppercase tracking-tighter mb-1 font-black">Sync Type</p>
-                                <p className="text-zinc-300">{report.syncType || "standard"}</p>
+                                <p className="text-zinc-500 uppercase tracking-tighter mb-1 font-black">
+                                  Sync Type
+                                </p>
+                                <p className="text-zinc-300">
+                                  {report.syncType || "standard"}
+                                </p>
                               </div>
                             </div>
 
@@ -269,7 +339,8 @@ export function DeployHistory() {
                             {report.backupCreated && (
                               <div className="mt-2 flex items-center gap-2 text-[10px] text-emerald-400/80">
                                 <CheckCircle2 className="w-3 h-3" />
-                                Backup verified: {report.backupCreated.path.split('/').pop()}
+                                Backup verified:{" "}
+                                {report.backupCreated.path.split("/").pop()}
                               </div>
                             )}
                           </div>
@@ -286,7 +357,7 @@ export function DeployHistory() {
 
       <Modal
         isOpen={modal.isOpen}
-        onClose={() => setModal(prev => ({ ...prev, isOpen: false }))}
+        onClose={() => setModal((prev) => ({ ...prev, isOpen: false }))}
         title={modal.title}
         description={modal.description}
         type={modal.type}
