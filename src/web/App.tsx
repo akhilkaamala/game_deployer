@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState, useCallback } from "react";
-import { deploy, fetchConfig, stopProcess, fetchGameSizes } from "./api";
+import { deploy, fetchConfig, stopProcess, streamGameSizes } from "./api";
 import type { ConfigResponse, DeployEnvironment } from "./types";
 import { Layout } from "./components/Layout";
 import { EnvironmentSelection } from "./components/EnvironmentSelection";
@@ -173,10 +173,19 @@ export function App() {
       });
 
     setLoadingSizes(true);
-    fetchGameSizes()
-      .then(setGameSizes)
-      .catch((err) => console.error("Failed to fetch game sizes:", err))
-      .finally(() => setLoadingSizes(false));
+    const stopStream = streamGameSizes(
+      (folder, size) => {
+        setGameSizes((prev) => ({
+          ...prev,
+          [folder]: size,
+          [folder.toLowerCase()]: size,
+        }));
+      },
+      () => {
+        setLoadingSizes(false);
+      },
+    );
+    return () => stopStream();
   }, []);
 
   // Initial load

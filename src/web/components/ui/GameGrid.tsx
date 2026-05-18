@@ -156,7 +156,19 @@ export const GameCard = React.memo(
           {/* Folder Size Indication - Moved to Bottom per User Request */}
           <div className="absolute bottom-1.5 left-1.5 z-20">
             <AnimatePresence mode="wait">
-              {isLoadingSizes ? (
+              {folderSize !== undefined && folderSize > 0 ? (
+                <motion.div
+                  key="size"
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="px-2 py-0.5 rounded-md bg-zinc-950/90 backdrop-blur-md border border-white/20 shadow-lg flex items-center gap-1.5"
+                >
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/80" />
+                  <span className="text-[10px] font-black font-mono text-white tracking-wider">
+                    {formatBytes(folderSize)}
+                  </span>
+                </motion.div>
+              ) : isLoadingSizes ? (
                 <motion.div
                   key="loading"
                   initial={{ opacity: 0, y: 5 }}
@@ -182,22 +194,7 @@ export const GameCard = React.memo(
                     />
                   </div>
                 </motion.div>
-              ) : (
-                folderSize !== undefined &&
-                folderSize > 0 && (
-                  <motion.div
-                    key="size"
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="px-2 py-0.5 rounded-md bg-zinc-950/90 backdrop-blur-md border border-white/20 shadow-lg flex items-center gap-1.5"
-                  >
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/80" />
-                    <span className="text-[10px] font-black font-mono text-white tracking-wider">
-                      {formatBytes(folderSize)}
-                    </span>
-                  </motion.div>
-                )
-              )}
+              ) : null}
             </AnimatePresence>
           </div>
         </div>

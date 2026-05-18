@@ -1,5 +1,121 @@
 [
   {
+    "id": "1778825643851",
+    "timestamp": "2026-05-15T06:14:03.851Z",
+    "reports": [
+      {
+        "environment": "qa",
+        "deploymentVersion": "v2026-05-15T06:10:06.757Z",
+        "sourcePath": "/home/blazeagrdev/blzAgrDev_S3client/games/content",
+        "targetPath": "/home/blazeagrqa/blazeagr-qa-client/content",
+        "gamePath": "content",
+        "status": "success",
+        "host": "18.142.2.196",
+        "cloudfront": {
+          "attempted": true,
+          "status": "success",
+          "distributionId": "E2XV2YWOZQAK35",
+          "output": "{\n    \"Location\": \"https://cloudfront.amazonaws.com/2020-05-31/distribution/E2XV2YWOZQAK35/invalidation/I75KF1EN4KNB35PDRFPP57QYUN\",\n    \"Invalidation\": {\n        \"Id\": \"I75KF1EN4KNB35PDRFPP57QYUN\",\n        \"Status\": \"InProgress\",\n        \"CreateTime\": \"2026-05-15T06:14:03.384000+00:00\",\n        \"InvalidationBatch\": {\n            \"Paths\": {\n                \"Quantity\": 1,\n                \"Items\": [\n                    \"/*\"\n                ]\n            },\n            \"CallerReference\": \"cli-1778825642-893326\"\n        }\n    }\n}"
+        },
+        "backupCreated": null,
+        "rollbackPointsAvailable": 1,
+        "deployedAt": "2026-05-15T06:14:03.805Z",
+        "artifacts": "content",
+        "syncType": "remote-to-remote",
+        "sourceEnvironment": "dev"
+      }
+    ],
+    "summary": {
+      "total": 1,
+      "success": 1,
+      "failed": 0
+    }
+  },
+  {
+    "id": "1778821019503",
+    "timestamp": "2026-05-15T04:56:59.503Z",
+    "reports": [
+      {
+        "environment": "qa",
+        "deploymentVersion": "v2026-05-15T04:50:27.791Z",
+        "sourcePath": "/home/blazeagrdev/blzAgrDev_S3client/games/golden_vault",
+        "targetPath": "/home/blazeagrqa/blazeagr-qa-client/golden_vault",
+        "gamePath": "golden_vault",
+        "status": "success",
+        "host": "18.142.2.196",
+        "cloudfront": {
+          "attempted": true,
+          "status": "success",
+          "distributionId": "E2XV2YWOZQAK35",
+          "output": "{\n    \"Location\": \"https://cloudfront.amazonaws.com/2020-05-31/distribution/E2XV2YWOZQAK35/invalidation/IBQY9JODL436M7OE2RWGYRB8VS\",\n    \"Invalidation\": {\n        \"Id\": \"IBQY9JODL436M7OE2RWGYRB8VS\",\n        \"Status\": \"InProgress\",\n        \"CreateTime\": \"2026-05-15T04:53:11.896000+00:00\",\n        \"InvalidationBatch\": {\n            \"Paths\": {\n                \"Quantity\": 1,\n                \"Items\": [\n                    \"/*\"\n                ]\n            },\n            \"CallerReference\": \"cli-1778820790-227685\"\n        }\n    }\n}"
+        },
+        "backupCreated": {
+          "path": "/home/blazeagrqa/blazeagr-qa-client/golden_vault_15MayBkp-2026",
+          "timestamp": "2026-05-15T04:50:34.005Z",
+          "environment": "qa",
+          "deploymentVersion": "v2026-05-15T04:50:27.791Z",
+          "deploymentStatus": "successful"
+        },
+        "rollbackPointsAvailable": 1,
+        "deployedAt": "2026-05-15T04:53:12.311Z",
+        "artifacts": "golden_vault",
+        "syncType": "remote-to-remote",
+        "sourceEnvironment": "dev"
+      },
+      {
+        "environment": "qa",
+        "deploymentVersion": "v2026-05-15T04:53:12.311Z",
+        "sourcePath": "/home/blazeagrdev/blzAgrDev_S3client/games/content",
+        "targetPath": "/home/blazeagrqa/blazeagr-qa-client/content",
+        "gamePath": "content",
+        "status": "success",
+        "host": "18.142.2.196",
+        "cloudfront": {
+          "attempted": true,
+          "status": "success",
+          "distributionId": "E2XV2YWOZQAK35",
+          "output": "{\n    \"Location\": \"https://cloudfront.amazonaws.com/2020-05-31/distribution/E2XV2YWOZQAK35/invalidation/IA3NEOOMKJ32ALL83ITRK0DWXW\",\n    \"Invalidation\": {\n        \"Id\": \"IA3NEOOMKJ32ALL83ITRK0DWXW\",\n        \"Status\": \"InProgress\",\n        \"CreateTime\": \"2026-05-15T04:56:59.128000+00:00\",\n        \"InvalidationBatch\": {\n            \"Paths\": {\n                \"Quantity\": 1,\n                \"Items\": [\n                    \"/*\"\n                ]\n            },\n            \"CallerReference\": \"cli-1778821018-172930\"\n        }\n    }\n}"
+        },
+        "backupCreated": null,
+        "rollbackPointsAvailable": 1,
+        "deployedAt": "2026-05-15T04:56:59.498Z",
+        "artifacts": "content",
+        "syncType": "remote-to-remote",
+        "sourceEnvironment": "dev"
+      }
+    ],
+    "summary": {
+      "total": 2,
+      "success": 2,
+      "failed": 0
+    }
+  },
+  {
+    "id": "1778820560740",
+    "timestamp": "2026-05-15T04:49:20.740Z",
+    "reports": [
+      {
+        "gamePath": "Golden Pharaoh Vault",
+        "status": "failed",
+        "error": "Process was manually terminated.",
+        "sourceEnvironment": "dev",
+        "environment": "qa"
+      },
+      {
+        "gamePath": "content",
+        "status": "failed",
+        "error": "Process was manually terminated.",
+        "sourceEnvironment": "dev",
+        "environment": "qa"
+      }
+    ],
+    "summary": {
+      "total": 2,
+      "success": 0,
+      "failed": 2
+    }
+  },
+  {
     "id": "1778671793065",
     "timestamp": "2026-05-13T11:29:53.065Z",
     "reports": [

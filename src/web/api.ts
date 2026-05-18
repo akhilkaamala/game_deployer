@@ -3,8 +3,8 @@ import type { ConfigResponse, DeployRequest, DeployResponse } from "./types";
 const API_BASE =
   typeof window !== "undefined"
     ? localStorage.getItem("custom_api_url") ||
-      (window.location.hostname.includes("cloudfront.net") 
-        ? "http://localhost:4173" 
+      (window.location.hostname.includes("cloudfront.net")
+        ? "http://localhost:4173"
         : import.meta.env.VITE_API_URL || "")
     : import.meta.env.VITE_API_URL || "";
 
@@ -43,4 +43,34 @@ export function stopProcess() {
 
 export function fetchGameSizes() {
   return request<Record<string, number>>(`/api/game-sizes?t=${Date.now()}`);
+}
+
+export function streamGameSizes(
+  onUpdate: (folder: string, size: number) => void,
+  onDone: () => void,
+) {
+  const url = getApiUrl("/api/game-sizes/stream");
+  const eventSource = new EventSource(url);
+
+  eventSource.onmessage = (e) => {
+    try {
+      const data = JSON.parse(e.data);
+      if (data.done) {
+        eventSource.close();
+        onDone();
+      } else if (data.folder) {
+        onUpdate(data.folder, data.size);
+      }
+    } catch (err) {
+      console.error("Failed to parse SSE data", err);
+    }
+  };
+
+  eventSource.onerror = (err) => {
+    console.error("Game size stream error:", err);
+    eventSource.close();
+    onDone();
+  };
+
+  return () => eventSource.close();
 }

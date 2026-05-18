@@ -140,7 +140,8 @@ function parseBody(req: http.IncomingMessage): Promise<Record<string, any>> {
 
 let cachedSizes: Record<string, number> = {};
 let lastFetch = 0;
-const CACHE_TTL = 1000 * 60 * 5; // 5 minutes
+let fetchPromise: Promise<Record<string, number>> | null = null;
+const CACHE_TTL = 1000 * 60 * 10; // 10 minutes
 
 function extractGameCatalog(config: any): string[] {
   const gameBase = config.paths?.sourcePath;
@@ -503,66 +504,149 @@ async function handleApi(
       return sendJson(res, 200, cachedSizes);
     }
 
-    const config = loadConfig({ rootDir, cliRetain: null });
-    const gameBase = config.paths?.sourcePath;
-    if (!gameBase) return sendJson(res, 200, {});
+    // Prevent parallel fetches by returning the existing promise
+    if (fetchPromise) {
+      const results = await fetchPromise;
+      return sendJson(res, 200, results);
+    }
 
-    const absoluteBase = path.isAbsolute(gameBase)
-      ? gameBase
-      : path.resolve(rootDir, gameBase);
+    fetchPromise = (async () => {
+      try {
+        const config = loadConfig({ rootDir, cliRetain: null });
+        const gameBase = config.paths?.sourcePath;
+        if (!gameBase) return {};
 
-    const sizes: Record<string, number> = {};
+        const absoluteBase = path.isAbsolute(gameBase)
+          ? gameBase
+          : path.resolve(rootDir, gameBase);
 
-    if (fs.existsSync(absoluteBase)) {
-      const entries = fs.readdirSync(absoluteBase, { withFileTypes: true });
-      await Promise.all(
-        entries
-          .filter((entry) => entry.isDirectory())
-          .map(async (entry) => {
-            const folderPath = path.join(absoluteBase, entry.name);
-            sizes[entry.name] = await getFolderSize(folderPath);
-          }),
-      );
-    } else {
-      const devServer = config.servers?.dev;
-      if (devServer) {
-        try {
-          const resolvedKey = path.resolve(rootDir, devServer.key);
-          // Normalize path: remove trailing slash if exists
-          const remoteBase = gameBase.endsWith("/")
-            ? gameBase.slice(0, -1)
-            : gameBase;
+        const sizes: Record<string, number> = {};
 
-          logger.info(`Fetching remote game sizes from ${devServer.host}...`);
-          const { stdout } = await runSsh(
-            { ...devServer, key: resolvedKey },
-            `du -sk ${remoteBase}/*/ 2>/dev/null`,
+        if (fs.existsSync(absoluteBase)) {
+          const entries = fs.readdirSync(absoluteBase, { withFileTypes: true });
+          await Promise.all(
+            entries
+              .filter((entry) => entry.isDirectory())
+              .map(async (entry) => {
+                const folderPath = path.join(absoluteBase, entry.name);
+                sizes[entry.name] = await getFolderSize(folderPath);
+              }),
           );
+        } else {
+          const devServer = config.servers?.dev;
+          if (devServer) {
+            try {
+              const resolvedKey = path.resolve(rootDir, devServer.key);
+              const remoteBase = gameBase.endsWith("/")
+                ? gameBase.slice(0, -1)
+                : gameBase;
 
-          if (stdout) {
-            const lines = stdout.split("\n");
-            for (const line of lines) {
-              const match = line.trim().match(/^(\d+)\s+(.+)$/);
-              if (match) {
-                const kb = Number.parseInt(match[1], 10);
-                const fullPath = match[2].replace(/\/$/, "");
-                const folderName = path.basename(fullPath);
-                sizes[folderName] = kb * 1024;
+              logger.info(`Fetching remote game sizes from ${devServer.host}...`);
+              const { stdout } = await runSsh(
+                { ...devServer, key: resolvedKey },
+                `du -sk ${remoteBase}/*/ 2>/dev/null`,
+              );
+
+              if (stdout) {
+                const lines = stdout.split("\n");
+                for (const line of lines) {
+                  const match = line.trim().match(/^(\d+)\s+(.+)$/);
+                  if (match) {
+                    const kb = Number.parseInt(match[1], 10);
+                    const fullPath = match[2].replace(/\/$/, "");
+                    const folderName = path.basename(fullPath);
+                    sizes[folderName] = kb * 1024;
+                  }
+                }
               }
+            } catch (err: any) {
+              logger.error(`Failed to fetch remote game sizes: ${err.message}`);
             }
           }
-        } catch (err: any) {
-          logger.error(`Failed to fetch remote game sizes: ${err.message}`);
         }
+
+        if (Object.keys(sizes).length > 0) {
+          cachedSizes = sizes;
+          lastFetch = Date.now();
+        }
+        return sizes;
+      } finally {
+        fetchPromise = null;
       }
+    })();
+
+    const result = await fetchPromise;
+    return sendJson(res, 200, result);
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/game-sizes/stream") {
+    res.writeHead(200, {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
+      "Access-Control-Allow-Origin": "*",
+      "X-Accel-Buffering": "no",
+    });
+    // Ensure headers are sent immediately
+    if (res.flushHeaders) res.flushHeaders();
+
+    const config = loadConfig({ rootDir, cliRetain: null });
+    const gameBase = config.paths?.sourcePath;
+    const devServer = config.servers?.dev;
+
+    if (!gameBase || !devServer) {
+      res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+      res.end();
+      return;
     }
 
-    if (Object.keys(sizes).length > 0) {
-      cachedSizes = sizes;
-      lastFetch = now;
-    }
+    const resolvedKey = path.resolve(rootDir, devServer.key);
+    const remoteBase = gameBase.endsWith("/") ? gameBase.slice(0, -1) : gameBase;
 
-    return sendJson(res, 200, sizes);
+    logger.info(`Streaming remote game sizes from ${devServer.host}...`);
+
+    const { spawnSsh } = await import("../utils/ssh");
+    // Use a shell loop to get sizes one by one on the remote side
+    const command = `for d in ${remoteBase}/*/ ; do [ -d "$d" ] && du -sk "$d" ; done`;
+
+    spawnSsh(
+      { ...devServer, key: resolvedKey },
+      command,
+      (line) => {
+        const match = line.trim().match(/^(\d+)\s+(.+)$/);
+        if (match) {
+          const kb = Number.parseInt(match[1], 10);
+          const fullPath = match[2].replace(/\/$/, "");
+          const folderName = path.basename(fullPath);
+          const size = kb * 1024;
+          
+          // Update local cache
+          cachedSizes[folderName] = size;
+          
+          res.write(`data: ${JSON.stringify({ folder: folderName, size })}\n\n`);
+        }
+      },
+      (errLine) => {
+        if (errLine.includes("Permission denied") || errLine.includes("No such file")) {
+          // log but continue
+        }
+      },
+    )
+      .then(() => {
+        lastFetch = Date.now();
+        res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+        res.end();
+      })
+      .catch((err) => {
+        logger.error(`SSH stream failed: ${err.message}`);
+        res.write(`data: ${JSON.stringify({ error: err.message, done: true })}\n\n`);
+        res.end();
+      });
+
+    req.on("close", () => {
+      // Logic to kill if needed, but spawnSsh handles activeProcesses
+    });
+    return;
   }
 
   if (req.method === "GET" && url.pathname === "/api/backups") {
