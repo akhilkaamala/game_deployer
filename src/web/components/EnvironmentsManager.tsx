@@ -30,7 +30,10 @@ interface ServerConfig {
   basePath: string;
   jsonRootPath: string;
   cloudfrontDistribution: string | null;
+  s3Bucket: string | null;
   backupRoot: string;
+  siteUrl: string;
+  destinationName: string;
 }
 
 interface EnvMap {
@@ -88,10 +91,28 @@ const FIELD_META: {
     placeholder: "e.g. E2XV2YWOZQAK35",
   },
   {
+    key: "s3Bucket",
+    label: "S3 Bucket (optional)",
+    icon: HardDrive,
+    placeholder: "e.g. blazeagr-qa-client-assets",
+  },
+  {
     key: "backupRoot",
     label: "Backup Root",
     icon: HardDrive,
     placeholder: "e.g. /home/user/deployment_backups",
+  },
+  {
+    key: "siteUrl",
+    label: "Site URL (release notes)",
+    icon: Globe,
+    placeholder: "e.g. blazeagrclient.databoxz.com",
+  },
+  {
+    key: "destinationName",
+    label: "Destination Name",
+    icon: Server,
+    placeholder: "e.g. Blaze Aggregator",
   },
 ];
 
@@ -131,7 +152,10 @@ const emptyServer: ServerConfig = {
   basePath: "",
   jsonRootPath: "",
   cloudfrontDistribution: null,
+  s3Bucket: null,
   backupRoot: "",
+  siteUrl: "",
+  destinationName: "",
 };
 
 export function EnvironmentsManager() {
@@ -238,6 +262,8 @@ export function EnvironmentsManager() {
                     ? null
                     : Number(value)
                   : value === "" && key === "cloudfrontDistribution"
+                    ? null
+                    : value === "" && key === "s3Bucket"
                     ? null
                     : value,
             },
@@ -367,6 +393,9 @@ export function EnvironmentsManager() {
                             value: config.cloudfrontDistribution,
                           },
                         ]
+                      : []),
+                    ...(config.s3Bucket
+                      ? [{ label: "S3 Bucket", value: config.s3Bucket }]
                       : []),
                   ].map(({ label, value }) => {
                     const isRevealed = revealedEnvs.has(name);

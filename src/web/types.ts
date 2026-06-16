@@ -16,6 +16,12 @@ export interface DeployResponse {
   cleanup: Record<string, unknown> | null;
 }
 
+export interface ServerInfo {
+  host: string;
+  siteUrl?: string;
+  destinationName?: string;
+}
+
 export interface ConfigResponse {
   environments: DeployEnvironment[];
   retention: Record<string, number>;
@@ -24,4 +30,5 @@ export interface ConfigResponse {
   sourcePath: string;
   serverBasePaths: Record<string, string>;
   jsonRootPaths: Record<string, string>;
+  serverInfo: Record<string, ServerInfo>;
 }

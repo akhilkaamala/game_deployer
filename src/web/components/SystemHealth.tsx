@@ -24,6 +24,7 @@ interface MemoryMB {
   heapUsed: number;
   heapTotal: number;
   rss: number;
+  systemTotal: number;
 }
 
 interface ServerHealth {
@@ -38,6 +39,9 @@ interface EnvHealth {
   status: "online" | "offline" | "checking";
   latencyMs?: number;
   error?: string;
+  s3Bucket?: string | null;
+  s3UsageBytes?: number | null;
+  s3UsageError?: string;
 }
 
 interface SystemHealthData {
@@ -56,6 +60,18 @@ function formatUptime(seconds: number): string {
   return `${m}m ${s}s`;
 }
 
+function formatBytes(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes < 0) return "--";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let value = bytes;
+  let unitIndex = 0;
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+  return `${value >= 10 ? value.toFixed(0) : value.toFixed(1)} ${units[unitIndex]}`;
+}
+
 function MemoryBar({
   used,
   total,
@@ -65,7 +81,8 @@ function MemoryBar({
   total: number;
   label: string;
 }) {
-  const pct = Math.min(100, Math.round((used / total) * 100));
+  const safeTotal = total > 0 ? total : 1;
+  const pct = Math.min(100, Math.round((used / safeTotal) * 100));
   const color =
     pct > 80 ? "bg-red-500" : pct > 60 ? "bg-amber-500" : "bg-emerald-500";
   return (
@@ -73,7 +90,8 @@ function MemoryBar({
       <div className="flex justify-between text-xs text-zinc-400">
         <span>{label}</span>
         <span className="font-mono">
-          {used} / {total} MB <span className="text-zinc-500">({pct}%)</span>
+          {used} / {safeTotal} MB{" "}
+          <span className="text-zinc-500">({pct}%)</span>
         </span>
       </div>
       <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
@@ -294,7 +312,7 @@ export function SystemHealth() {
                   />
                   <MemoryBar
                     used={data.server.memoryMB.rss}
-                    total={data.server.memoryMB.heapTotal}
+                    total={data.server.memoryMB.systemTotal}
                     label="RSS"
                   />
                 </div>
@@ -387,6 +405,17 @@ export function SystemHealth() {
                               {env.error}
                             </p>
                           )}
+                          <p className="text-[10px] text-zinc-500 mt-1 font-mono">
+                            S3:{" "}
+                            {env.s3Bucket
+                              ? env.s3UsageBytes !== null &&
+                                env.s3UsageBytes !== undefined
+                                ? `${formatBytes(env.s3UsageBytes)} (${env.s3Bucket})`
+                                : env.s3UsageError
+                                  ? `${env.s3UsageError} (${env.s3Bucket})`
+                                  : `Checking... (${env.s3Bucket})`
+                              : "Not configured"}
+                          </p>
                         </div>
 
                         {/* Latency */}

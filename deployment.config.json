@@ -20,7 +20,9 @@
       "basePath": "/home/blazeagrdev/blzAgrDev_S3client/games",
       "jsonRootPath": "/home/blazeagrdev/blzAgrDev_S3client/games/content/locale",
       "cloudfrontDistribution": null,
-      "backupRoot": "/home/blazeagrdev/blzAgrDev_S3client/games"
+      "backupRoot": "/home/blazeagrdev/blzAgrDev_S3client/games",
+      "siteUrl": "devblazeagrsite.run12345.com",
+      "destinationName": "Blaze Dev"
     },
     "qa": {
       "user": "blazeagrqa",
@@ -30,7 +32,9 @@
       "basePath": "/home/blazeagrqa/blazeagr-qa-client",
       "jsonRootPath": "/home/blazeagrqa/blazeagr-qa-client/content/locale",
       "cloudfrontDistribution": "E2XV2YWOZQAK35",
-      "backupRoot": "/home/blazeagrqa/blazeagr-qa-client"
+      "backupRoot": "/home/blazeagrqa/blazeagr-qa-client",
+      "siteUrl": "blazeagrqa.databoxz.com",
+      "destinationName": "Blaze QA"
     },
     "preprod": {
       "user": "blazeagrclient-s3",
@@ -40,7 +44,9 @@
       "basePath": "/home/blazeagrclient-s3/blazeagrclient-s3",
       "jsonRootPath": "/home/blazeagrclient-s3/blazeagrclient-s3/content/locale",
       "cloudfrontDistribution": null,
-      "backupRoot": "/home/blazeagrclient-s3/blazeagrclient-s3"
+      "backupRoot": "/home/blazeagrclient-s3/blazeagrclient-s3",
+      "siteUrl": "blazeagrclient.databoxz.com",
+      "destinationName": "Blaze Aggregator"
     }
   },
   "backupRetention": {

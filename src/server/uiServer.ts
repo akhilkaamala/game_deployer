@@ -3,11 +3,12 @@ import { exec } from "node:child_process";
 import fsp from "node:fs/promises";
 import path from "node:path";
 import http from "node:http";
+import os from "node:os";
 import { loadConfig, SUPPORTED_ENVS } from "../config/loadConfig";
 import { deployEnvironment } from "../deployment/deployService";
 import { runPostDeploymentCleanup } from "../deployment/cleanupScheduler";
 import { listBackups, streamBackups } from "../backup/backupManager";
-import { runSsh, killActiveProcesses } from "../utils/ssh";
+import { runSsh, killActiveProcesses, shSingleQuote } from "../utils/ssh";
 import logger, { logEmitter } from "../utils/logger";
 
 // Determine the project root directory safely
@@ -142,6 +143,127 @@ let cachedSizes: Record<string, number> = {};
 let lastFetch = 0;
 let fetchPromise: Promise<Record<string, number>> | null = null;
 const CACHE_TTL = 1000 * 60 * 10; // 10 minutes
+const S3_SIZE_CACHE_TTL = 1000 * 60 * 10; // 10 minutes
+const S3_QUERY_TIMEOUT_MS = 20000;
+const CLOUDFRONT_QUERY_TIMEOUT_MS = 12000;
+const s3UsageCache = new Map<
+  string,
+  { bytes: number | null; error?: string; fetchedAt: number }
+>();
+const cloudFrontBucketCache = new Map<
+  string,
+  { bucket: string | null; error?: string; fetchedAt: number }
+>();
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  return await Promise.race([
+    promise,
+    new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error("Connection timed out")), timeoutMs);
+    }),
+  ]);
+}
+
+async function getS3UsageBytes(
+  server: any,
+  bucket: string,
+): Promise<{ bytes: number | null; error?: string }> {
+  const now = Date.now();
+  const cached = s3UsageCache.get(bucket);
+  if (cached && now - cached.fetchedAt < S3_SIZE_CACHE_TTL) {
+    return { bytes: cached.bytes, error: cached.error };
+  }
+
+  if (!/^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/.test(bucket)) {
+    return { bytes: null, error: "Invalid bucket name" };
+  }
+
+  const command = `aws s3 ls ${shSingleQuote(`s3://${bucket}`)} --recursive --summarize | awk '/Total Size:/ {print $3}'`;
+
+  try {
+    const { stdout } = await withTimeout(
+      runSsh({ ...server, key: server.key }, command),
+      S3_QUERY_TIMEOUT_MS,
+    );
+    const output = stdout.trim().split(/\r?\n/).pop() || "";
+    const parsed = Number.parseInt(output, 10);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      const result = { bytes: null, error: "Could not read S3 size" };
+      s3UsageCache.set(bucket, { ...result, fetchedAt: now });
+      return result;
+    }
+
+    const result = { bytes: parsed };
+    s3UsageCache.set(bucket, { ...result, fetchedAt: now });
+    return result;
+  } catch (e: any) {
+    const result = {
+      bytes: null,
+      error: e?.message?.split("\n")[0] || "S3 size check failed",
+    };
+    s3UsageCache.set(bucket, { ...result, fetchedAt: now });
+    return result;
+  }
+}
+
+function inferBucketFromOriginDomain(domain: string): string | null {
+  const normalized = domain.trim().toLowerCase();
+  if (!normalized || normalized === "none") return null;
+
+  const s3Pattern =
+    /^(?<bucket>[a-z0-9][a-z0-9.-]{1,61}[a-z0-9])\.s3(?:[.-][a-z0-9-]+)?\.amazonaws\.com$/;
+  const websitePattern =
+    /^(?<bucket>[a-z0-9][a-z0-9.-]{1,61}[a-z0-9])\.s3-website(?:[.-][a-z0-9-]+)?\.amazonaws\.com$/;
+
+  return (
+    s3Pattern.exec(normalized)?.groups?.bucket ||
+    websitePattern.exec(normalized)?.groups?.bucket ||
+    null
+  );
+}
+
+async function inferS3BucketFromCloudFront(
+  server: any,
+  distributionId: string,
+): Promise<{ bucket: string | null; error?: string }> {
+  const cacheKey = `cf:${distributionId}`;
+  const now = Date.now();
+  const cached = cloudFrontBucketCache.get(cacheKey);
+  if (cached && now - cached.fetchedAt < S3_SIZE_CACHE_TTL) {
+    return { bucket: cached.bucket, error: cached.error };
+  }
+
+  const command = `aws cloudfront get-distribution --id ${shSingleQuote(
+    distributionId,
+  )} --query 'Distribution.DistributionConfig.Origins.Items[0].DomainName' --output text`;
+
+  try {
+    const { stdout } = await withTimeout(
+      runSsh({ ...server, key: server.key }, command),
+      CLOUDFRONT_QUERY_TIMEOUT_MS,
+    );
+    const domain = stdout.trim().split(/\r?\n/).pop() || "";
+    const bucket = inferBucketFromOriginDomain(domain);
+    if (!bucket) {
+      const result = {
+        bucket: null,
+        error: "CloudFront origin is not an S3 bucket",
+      };
+      cloudFrontBucketCache.set(cacheKey, { ...result, fetchedAt: now });
+      return result;
+    }
+    const result = { bucket };
+    cloudFrontBucketCache.set(cacheKey, { ...result, fetchedAt: now });
+    return result;
+  } catch (e: any) {
+    const result = {
+      bucket: null,
+      error: e?.message?.split("\n")[0] || "CloudFront lookup failed",
+    };
+    cloudFrontBucketCache.set(cacheKey, { ...result, fetchedAt: now });
+    return result;
+  }
+}
 
 function extractGameCatalog(config: any): string[] {
   const gameBase = config.paths?.sourcePath;
@@ -268,23 +390,56 @@ async function handleApi(
     const envChecks = await Promise.all(
       Object.entries(servers).map(async ([name, srv]: [string, any]) => {
         const start = Date.now();
+        let s3Bucket =
+          typeof srv.s3Bucket === "string" && srv.s3Bucket.trim()
+            ? srv.s3Bucket.trim()
+            : null;
+        const distributionId =
+          typeof srv.cloudfrontDistribution === "string" &&
+          srv.cloudfrontDistribution.trim()
+            ? srv.cloudfrontDistribution.trim()
+            : null;
         try {
-          await Promise.race([
+          await withTimeout(
             runSsh({ ...srv, key: srv.key }, "echo ok"),
-            new Promise<never>((_, reject) =>
-              setTimeout(
-                () => reject(new Error("Connection timed out")),
-                SSH_TIMEOUT_MS,
-              ),
-            ),
-          ]);
-          return { name, status: "online", latencyMs: Date.now() - start };
+            SSH_TIMEOUT_MS,
+          );
+
+          let s3UsageBytes: number | null = null;
+          let s3UsageError: string | undefined;
+          if (!s3Bucket && distributionId) {
+            const inferred = await inferS3BucketFromCloudFront(
+              srv,
+              distributionId,
+            );
+            if (inferred.bucket) {
+              s3Bucket = inferred.bucket;
+            } else if (inferred.error) {
+              s3UsageError = inferred.error;
+            }
+          }
+          if (s3Bucket) {
+            const s3Usage = await getS3UsageBytes(srv, s3Bucket);
+            s3UsageBytes = s3Usage.bytes;
+            s3UsageError = s3Usage.error;
+          }
+
+          return {
+            name,
+            status: "online",
+            latencyMs: Date.now() - start,
+            s3Bucket,
+            s3UsageBytes,
+            s3UsageError,
+          };
         } catch (e: any) {
           return {
             name,
             status: "offline",
             error: e.message?.split("\n")[0] || "Connection failed",
             latencyMs: Date.now() - start,
+            s3Bucket,
+            s3UsageBytes: null,
           };
         }
       }),
@@ -297,6 +452,7 @@ async function handleApi(
           heapUsed: Math.round(mem.heapUsed / 1024 / 1024),
           heapTotal: Math.round(mem.heapTotal / 1024 / 1024),
           rss: Math.round(mem.rss / 1024 / 1024),
+          systemTotal: Math.round(os.totalmem() / 1024 / 1024),
         },
         nodeVersion: process.version,
         platform: process.platform,
@@ -493,6 +649,16 @@ async function handleApi(
         Object.entries(config.servers).map(([name, s]: any) => [
           name,
           s.jsonRootPath,
+        ]),
+      ),
+      serverInfo: Object.fromEntries(
+        Object.entries(config.servers).map(([name, s]: any) => [
+          name,
+          {
+            host: s.host || "",
+            siteUrl: s.siteUrl || "",
+            destinationName: s.destinationName || "",
+          },
         ]),
       ),
     });
