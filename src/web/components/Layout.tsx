@@ -9,6 +9,7 @@ import {
   Gamepad2,
   ChevronLeft,
   ChevronRight,
+  ClipboardList,
   Command,
   Moon,
   Sun,
@@ -22,6 +23,7 @@ import { GamesManager } from "./GamesManager";
 import { SettingsManager } from "./Settings";
 import { BackupsManager } from "./BackupsManager";
 import { DeployHistory } from "./DeployHistory";
+import { ReleaseNotesManager } from "./ReleaseNotesManager";
 
 declare var __APP_VERSION__: string;
 
@@ -115,6 +117,7 @@ export function Layout({ children }: LayoutProps) {
 
   const navItems = [
     { icon: LayoutDashboard, label: "Dashboard" },
+    { icon: ClipboardList, label: "Release Notes" },
     { icon: History, label: "Deploy History" },
     { icon: ShieldCheck, label: "Backups" },
     { icon: Server, label: "Environments" },
@@ -217,7 +220,9 @@ export function Layout({ children }: LayoutProps) {
             <p className="text-xs text-muted-foreground">
               {activePage === "Environments"
                 ? "Manage server configurations for all deployment targets"
-                : activePage === "Deploy History"
+                : activePage === "Release Notes"
+                  ? "Build client release notes from game selection and export to Excel or PDF"
+                  : activePage === "Deploy History"
                   ? "Audit and review past deployment sessions and their status"
                   : activePage === "System Health"
                     ? "Monitor SSH connectivity and server metrics in real time"
@@ -315,6 +320,8 @@ export function Layout({ children }: LayoutProps) {
         <div className="p-8 pb-20">
           {activePage === "Environments" ? (
             <EnvironmentsManager />
+          ) : activePage === "Release Notes" ? (
+            <ReleaseNotesManager />
           ) : activePage === "Deploy History" ? (
             <DeployHistory />
           ) : activePage === "System Health" ? (

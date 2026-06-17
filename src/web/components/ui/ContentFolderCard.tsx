@@ -10,6 +10,7 @@ interface ContentFolderCardProps {
   onToggle: () => void;
   onToggleBackup: () => void;
   isDeploying?: boolean;
+  hideBackup?: boolean;
 }
 
 export function ContentFolderCard({
@@ -18,6 +19,7 @@ export function ContentFolderCard({
   onToggle,
   onToggleBackup,
   isDeploying = false,
+  hideBackup = false,
 }: ContentFolderCardProps) {
   return (
     <Card
@@ -71,31 +73,35 @@ export function ContentFolderCard({
           </p>
         </div>
 
-        <div className="flex items-center gap-3 pr-2">
-          <div
-            className={cn(
-              "flex flex-col items-center gap-1 px-4 py-2 rounded-lg border transition-all group/backup",
-              !isSelected ? "opacity-40 cursor-not-allowed pointer-events-none grayscale" : "",
-              isBackupEnabled
-                ? "bg-amber-500/10 border-amber-500/30 text-amber-500"
-                : "bg-white/5 border-white/5 text-zinc-500 hover:bg-white/10 hover:border-white/10",
-            )}
-            onClick={(e) => {
-              e.stopPropagation();
-              if (isSelected) onToggleBackup();
-            }}
-          >
-            <Database
+        {!hideBackup && (
+          <div className="flex items-center gap-3 pr-2">
+            <div
               className={cn(
-                "w-4 h-4 transition-transform",
-                isBackupEnabled ? "scale-110" : "group-hover/backup:scale-110",
+                "flex flex-col items-center gap-1 px-4 py-2 rounded-lg border transition-all group/backup",
+                !isSelected
+                  ? "opacity-40 cursor-not-allowed pointer-events-none grayscale"
+                  : "",
+                isBackupEnabled
+                  ? "bg-amber-500/10 border-amber-500/30 text-amber-500"
+                  : "bg-white/5 border-white/5 text-zinc-500 hover:bg-white/10 hover:border-white/10",
               )}
-            />
-            <span className="text-[9px] font-black uppercase tracking-widest">
-              Backup
-            </span>
+              onClick={(e) => {
+                e.stopPropagation();
+                if (isSelected) onToggleBackup();
+              }}
+            >
+              <Database
+                className={cn(
+                  "w-4 h-4 transition-transform",
+                  isBackupEnabled ? "scale-110" : "group-hover/backup:scale-110",
+                )}
+              />
+              <span className="text-[9px] font-black uppercase tracking-widest">
+                Backup
+              </span>
+            </div>
           </div>
-        </div>
+        )}
       </CardContent>
     </Card>
   );

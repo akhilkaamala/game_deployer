@@ -5,7 +5,6 @@ import { Layout } from "./components/Layout";
 import { EnvironmentSelection } from "./components/EnvironmentSelection";
 import { GameSelector } from "./components/ui/GameSelector";
 import { DeploymentSummary } from "./components/DeploymentSummary";
-import { ReleaseNotes } from "./components/ReleaseNotes";
 import { LogViewer } from "./components/ui/LogViewer";
 import {
   DeploymentStepper,
@@ -498,19 +497,6 @@ export function App() {
               gameFolderMap={config?.gameFolderMap ?? {}}
               serverBasePaths={config?.serverBasePaths ?? {}}
               jsonRootPaths={config?.jsonRootPaths ?? {}}
-            />
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.08 }}
-          >
-            <ReleaseNotes
-              selectedGames={gamePaths}
-              gameFolderMap={config?.gameFolderMap ?? {}}
-              serverBasePaths={config?.serverBasePaths ?? {}}
-              serverInfo={config?.serverInfo ?? {}}
             />
           </motion.div>
 

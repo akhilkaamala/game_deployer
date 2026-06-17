@@ -29,6 +29,7 @@ interface GameSelectorProps {
   onDeselectAll: () => void;
   onSelectBackups: (games: string[]) => void;
   onDeselectBackups: () => void;
+  hideBackup?: boolean;
 }
 
 export function GameSelector({
@@ -44,6 +45,7 @@ export function GameSelector({
   onDeselectAll,
   onSelectBackups,
   onDeselectBackups,
+  hideBackup = false,
 }: GameSelectorProps) {
   const [search, setSearch] = useState("");
   const [showActions, setShowActions] = useState(true);
@@ -109,12 +111,14 @@ export function GameSelector({
     }
   };
 
-  const handleExpandAll = () => {
-    setExpandedGroups(Object.keys(filteredGroups));
-  };
+  const visibleCategories = Object.keys(filteredGroups);
+  const allVisibleExpanded =
+    visibleCategories.length > 0 &&
+    visibleCategories.every((c) => expandedGroups.includes(c));
 
-  const handleCollapseAll = () => {
-    setExpandedGroups([]);
+  const toggleAllGroups = () => {
+    if (allVisibleExpanded) setExpandedGroups([]);
+    else setExpandedGroups(visibleCategories);
   };
 
   const toggleGroup = (category: string) => {
@@ -159,19 +163,15 @@ export function GameSelector({
 
           <div className="flex items-center gap-1 bg-white/[0.02] border border-white/5 rounded-lg p-1">
             <button
-              onClick={handleExpandAll}
+              onClick={toggleAllGroups}
               className="p-1.5 rounded-md hover:bg-white/5 text-zinc-600 hover:text-white transition-all"
-              title="Expand All"
+              title={allVisibleExpanded ? "Collapse" : "Expand"}
             >
-              <Maximize2 className="w-3.5 h-3.5" />
-            </button>
-            <div className="w-px h-3 bg-white/5" />
-            <button
-              onClick={handleCollapseAll}
-              className="p-1.5 rounded-md hover:bg-white/5 text-zinc-600 hover:text-white transition-all"
-              title="Collapse All"
-            >
-              <Minimize2 className="w-3.5 h-3.5" />
+              {allVisibleExpanded ? (
+                <Minimize2 className="w-3.5 h-3.5" />
+              ) : (
+                <Maximize2 className="w-3.5 h-3.5" />
+              )}
             </button>
           </div>
         </div>
@@ -246,13 +246,11 @@ export function GameSelector({
                       onClick={(e) => {
                         e.stopPropagation();
                         if (allInGroupSelected) {
-                          // Toggle OFF: remove all group games from selectedGames
                           const newSelected = selectedGames.filter(
                             (g) => !groupGames.includes(g),
                           );
                           onSelectAll(newSelected);
                         } else {
-                          // Toggle ON: add all group games to selectedGames
                           const newSelected = [
                             ...new Set([...selectedGames, ...groupGames]),
                           ];
@@ -262,37 +260,39 @@ export function GameSelector({
                     >
                       ALL
                     </button>
-                    <div className="w-px h-2 bg-white/10" />
-                    <button
-                      className={cn(
-                        "text-[9px] font-black uppercase tracking-tight transition-colors px-1",
-                        selectedInGroup.length === 0
-                          ? "opacity-30 cursor-not-allowed pointer-events-none grayscale"
-                          : allInGroupBackedUp
-                            ? "text-emerald-500"
-                            : "text-zinc-500 hover:text-emerald-500",
-                      )}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (selectedInGroup.length === 0) return;
+                    {!hideBackup && (
+                      <>
+                        <div className="w-px h-2 bg-white/10" />
+                        <button
+                          className={cn(
+                            "text-[9px] font-black uppercase tracking-tight transition-colors px-1",
+                            selectedInGroup.length === 0
+                              ? "opacity-30 cursor-not-allowed pointer-events-none grayscale"
+                              : allInGroupBackedUp
+                                ? "text-emerald-500"
+                                : "text-zinc-500 hover:text-emerald-500",
+                          )}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (selectedInGroup.length === 0) return;
 
-                        if (allInGroupBackedUp) {
-                          // Toggle OFF: remove selected group games from backupGames
-                          const newBackups = backupGames.filter(
-                            (g) => !selectedInGroup.includes(g),
-                          );
-                          onSelectBackups(newBackups);
-                        } else {
-                          // Toggle ON: add selected group games to backupGames
-                          const newBackups = [
-                            ...new Set([...backupGames, ...selectedInGroup]),
-                          ];
-                          onSelectBackups(newBackups);
-                        }
-                      }}
-                    >
-                      BACKUP
-                    </button>
+                            if (allInGroupBackedUp) {
+                              const newBackups = backupGames.filter(
+                                (g) => !selectedInGroup.includes(g),
+                              );
+                              onSelectBackups(newBackups);
+                            } else {
+                              const newBackups = [
+                                ...new Set([...backupGames, ...selectedInGroup]),
+                              ];
+                              onSelectBackups(newBackups);
+                            }
+                          }}
+                        >
+                          BACKUP
+                        </button>
+                      </>
+                    )}
                     {groupSelectedCount > 0 && (
                       <div className="w-4 h-4 flex items-center justify-center bg-primary rounded-full ml-1 shadow-[0_0_10px_rgba(var(--primary-rgb),0.3)]">
                         <span className="text-[9px] font-black text-primary-foreground">
@@ -314,6 +314,7 @@ export function GameSelector({
                       loadingSizes={loadingSizes}
                       onToggle={onToggle}
                       onToggleBackup={onToggleBackup}
+                      hideBackup={hideBackup}
                     />
                   </div>
                 )}
@@ -333,7 +334,9 @@ export function GameSelector({
         <div className="flex gap-4">
           <span>Catalog: {games.length}</span>
           <span>Filtered: {allFilteredGames.length}</span>
-          <span className="text-primary/70">Backups: {backupGames.length}</span>
+          {!hideBackup && (
+            <span className="text-primary/70">Backups: {backupGames.length}</span>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <Layers className="w-3 h-3" />

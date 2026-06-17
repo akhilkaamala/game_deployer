@@ -59,6 +59,23 @@ export interface ReleaseNotesData {
   generatedAt: string;
 }
 
+export const DEFAULT_CLIENT_STEPS = [
+  `Sync files from ${RELEASE_NOTES_SOURCE_LABEL}.`,
+  "Kindly give access permission to the folder",
+];
+
+function buildClientSteps(
+  steps: string[] = DEFAULT_CLIENT_STEPS,
+): ClientStep[] {
+  return steps
+    .map((description) => description.trim())
+    .filter(Boolean)
+    .map((description, index) => ({
+      step: index + 1,
+      description,
+    }));
+}
+
 function resolveFolder(
   game: string,
   gameFolderMap: Record<string, string | { path: string; jsonExt: string }>,
@@ -81,11 +98,13 @@ export function buildReleaseNotes({
   gameFolderMap,
   serverBasePaths,
   serverInfo,
+  clientSteps = DEFAULT_CLIENT_STEPS,
 }: {
   selectedGames: string[];
   gameFolderMap: Record<string, string | { path: string; jsonExt: string }>;
   serverBasePaths: Record<string, string>;
   serverInfo: Record<string, ServerInfo>;
+  clientSteps?: string[];
 }): ReleaseNotesData {
   const preprod = serverInfo[RELEASE_NOTES_SOURCE_ENV];
   const serverBase = serverBasePaths[RELEASE_NOTES_SOURCE_ENV] || "";
@@ -110,17 +129,11 @@ export function buildReleaseNotes({
     };
   });
 
-  const clientSteps: ClientStep[] = [
-    { step: 1, description: `Sync files from ${RELEASE_NOTES_SOURCE_LABEL}.` },
-    {
-      step: 2,
-      description: "Kindly give access permission to the folder",
-    },
-  ];
+  const numberedClientSteps = buildClientSteps(clientSteps);
 
   return {
     deploymentRows,
-    clientSteps,
+    clientSteps: numberedClientSteps,
     generatedAt: new Date().toISOString(),
   };
 }
@@ -139,9 +152,18 @@ function borderRow(row: ExcelJS.Row): void {
   }
 }
 
-function countDeploymentBodyRows(gameCount: number): number {
-  if (gameCount === 0) return 0;
-  return gameCount * 2 - 1;
+function needsSpacerBeforeContent(
+  rows: ReleaseNotesRow[],
+  index: number,
+): boolean {
+  return index > 0 && rows[index].component === "content";
+}
+
+function countDeploymentBodyRows(rows: ReleaseNotesRow[]): number {
+  if (rows.length === 0) return 0;
+  const contentSpacer =
+    rows.length > 1 && rows[rows.length - 1].component === "content" ? 1 : 0;
+  return rows.length + contentSpacer;
 }
 
 type PdfCell =
@@ -156,11 +178,11 @@ type PdfCell =
 function buildDeploymentPdfBody(rows: ReleaseNotesRow[]): PdfCell[][] {
   if (rows.length === 0) return [];
 
-  const rowSpan = countDeploymentBodyRows(rows.length);
+  const rowSpan = countDeploymentBodyRows(rows);
   const body: PdfCell[][] = [];
 
   rows.forEach((game, index) => {
-    if (index > 0) {
+    if (needsSpacerBeforeContent(rows, index)) {
       body.push(Array(COL_COUNT).fill(""));
     }
 
@@ -216,12 +238,12 @@ export async function downloadReleaseNotesExcel(
   const sheet = workbook.addWorksheet("Slots");
 
   sheet.columns = [
-    { width: 18 },
+    { width: 24 },
     { width: 10 },
-    { width: 14 },
+    { width: 16 },
     { width: 18 },
     { width: 52 },
-    { width: 18 },
+    { width: 32 },
     { width: 10 },
     { width: 42 },
   ];
@@ -240,7 +262,7 @@ export async function downloadReleaseNotesExcel(
   const { deploymentRows } = data;
 
   deploymentRows.forEach((game, index) => {
-    if (index > 0) {
+    if (needsSpacerBeforeContent(deploymentRows, index)) {
       borderRow(sheet.getRow(currentRow));
       currentRow++;
     }
@@ -285,7 +307,6 @@ export async function downloadReleaseNotesExcel(
     const row = sheet.getRow(rowNum);
     row.getCell(1).value = step.step;
     row.getCell(2).value = step.description;
-    row.getCell(2).font = { bold: true };
     sheet.mergeCells(rowNum, 2, rowNum, COL_COUNT);
     borderRow(row);
   });
@@ -349,7 +370,7 @@ export function downloadReleaseNotesPdf(data: ReleaseNotesData): void {
       {
         content: step.description,
         colSpan: 7,
-        styles: { fontStyle: "bold", halign: "left" },
+        styles: { halign: "left" },
       },
     ]),
     styles: {

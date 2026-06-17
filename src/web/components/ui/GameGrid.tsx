@@ -1,6 +1,6 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, Database } from "lucide-react";
+import { Database } from "lucide-react";
 import { cn } from "../../lib/utils";
 
 interface GameCardProps {
@@ -14,6 +14,7 @@ interface GameCardProps {
   isSpecial?: boolean;
   folderSize?: number;
   isLoadingSizes?: boolean;
+  hideBackup?: boolean;
 }
 
 function formatBytes(bytes: number, decimals = 1) {
@@ -37,6 +38,7 @@ export const GameCard = React.memo(
     isSpecial = false,
     folderSize,
     isLoadingSizes = false,
+    hideBackup = false,
   }: GameCardProps) => {
     const [imgError, setImgError] = React.useState(false);
     const imageUrl = explicitImageUrl;
@@ -102,56 +104,38 @@ export const GameCard = React.memo(
             )}
           </div>
 
-          {/* Selected Indicator */}
-          <AnimatePresence>
-            {isSelected && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.5 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.5 }}
-                className={cn(
-                  "absolute top-1.5 right-1.5 w-4 h-4 rounded-full flex items-center justify-center shadow-lg z-10",
-                  isSpecial
-                    ? "bg-amber-500 text-amber-950"
-                    : "bg-primary text-primary-foreground",
-                )}
-              >
-                <Check className="w-3 h-3 stroke-[5]" />
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Backup Toggle Overlay */}
-          <div
-            className={cn(
-              "absolute bottom-1.5 right-1.5 z-20 transition-all duration-300",
-              isSelected
-                ? "opacity-100"
-                : "opacity-0 scale-90 pointer-events-none",
-            )}
-            onClick={(e) => {
-              e.stopPropagation();
-              if (isSelected) onToggleBackup(game);
-            }}
-          >
+          {!hideBackup && (
             <div
               className={cn(
-                "w-6 h-6 rounded-md flex items-center justify-center transition-all",
-                isBackupEnabled
-                  ? isSpecial
-                    ? "bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.4)]"
-                    : "bg-primary shadow-[0_0_10px_rgba(var(--primary-rgb),0.4)]"
-                  : "bg-zinc-800/80 hover:bg-zinc-700 text-zinc-500",
+                "absolute top-1.5 right-1.5 z-20 transition-all duration-300",
+                isSelected
+                  ? "opacity-100"
+                  : "opacity-0 scale-90 pointer-events-none",
               )}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (isSelected) onToggleBackup(game);
+              }}
             >
-              <Database
+              <div
                 className={cn(
-                  "w-3.5 h-3.5",
-                  isBackupEnabled ? "text-white" : "",
+                  "w-6 h-6 rounded-full flex items-center justify-center transition-all backdrop-blur-sm border border-white/15 shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_10px_25px_rgba(0,0,0,0.35)]",
+                  isBackupEnabled
+                    ? isSpecial
+                      ? "bg-amber-500/95 shadow-[0_0_12px_rgba(245,158,11,0.45)]"
+                      : "bg-primary/95 shadow-[0_0_12px_rgba(var(--primary-rgb),0.45)]"
+                    : "bg-zinc-950/65 hover:bg-zinc-900/70 text-zinc-300",
                 )}
-              />
+              >
+                <Database
+                  className={cn(
+                    "w-4 h-4 stroke-[5]",
+                    isBackupEnabled ? "text-white" : "",
+                  )}
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Folder Size Indication - Moved to Bottom per User Request */}
           <div className="absolute bottom-1.5 left-1.5 z-20">
@@ -161,10 +145,10 @@ export const GameCard = React.memo(
                   key="size"
                   initial={{ opacity: 0, y: 5 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="px-2 py-0.5 rounded-md bg-zinc-950/90 backdrop-blur-md border border-white/20 shadow-lg flex items-center gap-1.5"
+                  className="px-1.5 py-0.4 rounded-md bg-zinc-950/90 backdrop-blur-md border border-white/20 shadow-lg flex items-center gap-1.5"
                 >
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/80" />
-                  <span className="text-[10px] font-black font-mono text-white tracking-wider">
+                  <span className="text-[9px] font-black font-mono text-white tracking-wide">
                     {formatBytes(folderSize)}
                   </span>
                 </motion.div>
@@ -238,6 +222,7 @@ interface GameGridProps {
   gameSizes?: Record<string, number>;
   loadingSizes?: boolean;
   specialGames?: string[];
+  hideBackup?: boolean;
 }
 
 export function GameGrid({
@@ -250,6 +235,7 @@ export function GameGrid({
   gameSizes = {},
   loadingSizes = false,
   specialGames = [],
+  hideBackup = false,
 }: GameGridProps) {
   return (
     <div className="grid grid-cols-5 gap-3 py-2">
@@ -278,6 +264,7 @@ export function GameGrid({
               gameSizes[(gameFolderMap[game]?.path || "").toLowerCase()]
             }
             isLoadingSizes={loadingSizes}
+            hideBackup={hideBackup}
           />
         </motion.div>
       ))}
