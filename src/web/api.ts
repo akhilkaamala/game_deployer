@@ -27,6 +27,44 @@ export function fetchConfig() {
   return request<ConfigResponse>(`/api/config?t=${Date.now()}`);
 }
 
+export function fetchSshKeys() {
+  return request<{ keys: Record<string, { path: string; exists: boolean }> }>(
+    "/api/ssh-keys",
+  );
+}
+
+export function saveSshKey(env: string, keyPath: string) {
+  return request<{ message: string; path: string }>(
+    `/api/ssh-keys/${encodeURIComponent(env)}`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path: keyPath }),
+    },
+  );
+}
+
+export function removeSshKey(env: string) {
+  return request<{ message: string }>(
+    `/api/ssh-keys/${encodeURIComponent(env)}`,
+    { method: "DELETE" },
+  );
+}
+
+export function browseSshKey() {
+  return fetch(getApiUrl("/api/browse-key")).then(async (response) => {
+    const data = (await response.json()) as {
+      path?: string;
+      cancelled?: boolean;
+      error?: string;
+    };
+    if (!response.ok) {
+      throw new Error(data?.error || `Browse failed: ${response.status}`);
+    }
+    return data;
+  });
+}
+
 export function deploy(payload: DeployRequest) {
   return request<DeployResponse>("/api/deploy", {
     method: "POST",
@@ -46,10 +84,11 @@ export function fetchGameSizes() {
 }
 
 export function streamGameSizes(
-  onUpdate: (folder: string, size: number) => void,
+  env: string,
+  onUpdate: (folder: string, size: number, timestamp?: number) => void,
   onDone: () => void,
 ) {
-  const url = getApiUrl("/api/game-sizes/stream");
+  const url = getApiUrl(`/api/game-sizes/stream?env=${encodeURIComponent(env)}`);
   const eventSource = new EventSource(url);
 
   eventSource.onmessage = (e) => {
@@ -59,7 +98,7 @@ export function streamGameSizes(
         eventSource.close();
         onDone();
       } else if (data.folder) {
-        onUpdate(data.folder, data.size);
+        onUpdate(data.folder, data.size, data.timestamp);
       }
     } catch (err) {
       console.error("Failed to parse SSE data", err);

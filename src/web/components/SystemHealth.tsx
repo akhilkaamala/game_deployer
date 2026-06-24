@@ -19,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/Card";
 import { Button } from "./ui/Button";
 import { cn } from "../lib/utils";
 import { getApiUrl } from "../api";
+import { SSH_KEYS_UPDATED_EVENT } from "./SshKeyLinker";
 
 interface MemoryMB {
   heapUsed: number;
@@ -164,7 +165,12 @@ export function SystemHealth() {
   useEffect(() => {
     fetchHealth();
     const interval = setInterval(() => fetchHealth(), 30000);
-    return () => clearInterval(interval);
+    const onKeysUpdated = () => fetchHealth(true);
+    window.addEventListener(SSH_KEYS_UPDATED_EVENT, onKeysUpdated);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener(SSH_KEYS_UPDATED_EVENT, onKeysUpdated);
+    };
   }, [fetchHealth]);
 
   if (loading) {

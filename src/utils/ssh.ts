@@ -179,13 +179,84 @@ export async function runScpToRemote(
   return { stdout: stdout.trim(), stderr: stderr.trim() };
 }
 
+type RsyncPhase = "pull" | "push";
+
+function createRsyncProgressTracker(
+  phase: RsyncPhase,
+  onProgress?: (percent: number, phase: RsyncPhase) => void,
+) {
+  let lastPercent = -1;
+  const phaseCap = phase === "pull" ? 50 : 100;
+  const phaseBase = phase === "pull" ? 0 : 50;
+
+  const report = (rsyncPercent: number) => {
+    if (!onProgress) return;
+    const scaled = Math.min(
+      phaseCap,
+      phaseBase + Math.round((rsyncPercent * (phaseCap - phaseBase)) / 100),
+    );
+    if (scaled > lastPercent) {
+      lastPercent = scaled;
+      onProgress(scaled, phase);
+    }
+  };
+
+  const onStreamData = (chunk: string) => {
+    for (const match of chunk.matchAll(/(\d+)%/g)) {
+      report(Number.parseInt(match[1], 10));
+    }
+  };
+
+  const onComplete = () => {
+    if (!onProgress || lastPercent >= phaseCap) return;
+    lastPercent = phaseCap;
+    onProgress(phaseCap, phase);
+  };
+
+  return { onStreamData, onComplete };
+}
+
+function runRsyncWithProgress(
+  args: string[],
+  phase: RsyncPhase,
+  onProgress?: (percent: number, phase: RsyncPhase) => void,
+): Promise<{ stdout: string; stderr: string }> {
+  const tracker = createRsyncProgressTracker(phase, onProgress);
+
+  return new Promise((resolve, reject) => {
+    const child = spawn("rsync", args);
+    activeProcesses.add(child);
+    let stdout = "";
+    let stderr = "";
+
+    const handleStream = (chunk: string, target: "stdout" | "stderr") => {
+      if (target === "stdout") stdout += chunk;
+      else stderr += chunk;
+      tracker.onStreamData(chunk);
+    };
+
+    child.stdout.on("data", (data) => handleStream(data.toString(), "stdout"));
+    child.stderr.on("data", (data) => handleStream(data.toString(), "stderr"));
+    child.on("close", (code) => {
+      activeProcesses.delete(child);
+      if (code === 0) {
+        tracker.onComplete();
+        resolve({ stdout, stderr });
+      } else {
+        const label = phase === "pull" ? "Source pull" : "Target push";
+        reject(new Error(`${label} failed with code ${code}: ${stderr}`));
+      }
+    });
+  });
+}
+
 export async function runRemoteToRemoteRsync(
   sourceServer: ServerConfig,
   targetServer: ServerConfig,
   sourcePath: string,
   targetPath: string,
   dryRun: boolean = false,
-  onProgress?: (percent: number) => void,
+  onProgress?: (percent: number, phase: RsyncPhase) => void,
 ): Promise<{ stdout: string; stderr: string }> {
   const tempLocalDir = path.join(os.tmpdir(), `deploy_${Date.now()}`);
 
@@ -203,29 +274,7 @@ export async function runRemoteToRemoteRsync(
       `${tempLocalDir}/`,
     ];
 
-    let lastStdout = "";
-    const pullResult = await new Promise<{ stdout: string; stderr: string }>(
-      (resolve, reject) => {
-        const child = spawn("rsync", pullArgs);
-        activeProcesses.add(child);
-        let stdout = "";
-        let stderr = "";
-        child.stdout.on("data", (data) => {
-          const chunk = data.toString();
-          stdout += chunk;
-          const match = chunk.match(/(\d+)%/);
-          if (match && onProgress) {
-            onProgress(Math.floor(Number.parseInt(match[1], 10) * 0.5));
-          }
-        });
-        child.stderr.on("data", (data) => (stderr += data.toString()));
-        child.on("close", (code) => {
-          activeProcesses.delete(child);
-          if (code === 0) resolve({ stdout, stderr });
-          else reject(new Error(`Source pull failed with code ${code}: ${stderr}`));
-        });
-      },
-    );
+    const pullResult = await runRsyncWithProgress(pullArgs, "pull", onProgress);
 
     // 2. Push from local temp to target
     const pushArgs = [
@@ -240,28 +289,7 @@ export async function runRemoteToRemoteRsync(
       `${sshTarget(targetServer)}:${targetPath}/`,
     ].filter(Boolean) as string[];
 
-    const pushResult = await new Promise<{ stdout: string; stderr: string }>(
-      (resolve, reject) => {
-        const child = spawn("rsync", pushArgs);
-        activeProcesses.add(child);
-        let stdout = "";
-        let stderr = "";
-        child.stdout.on("data", (data) => {
-          const chunk = data.toString();
-          stdout += chunk;
-          const match = chunk.match(/(\d+)%/);
-          if (match && onProgress) {
-            onProgress(50 + Math.floor(Number.parseInt(match[1], 10) * 0.5));
-          }
-        });
-        child.stderr.on("data", (data) => (stderr += data.toString()));
-        child.on("close", (code) => {
-          activeProcesses.delete(child);
-          if (code === 0) resolve({ stdout, stderr });
-          else reject(new Error(`Target push failed with code ${code}: ${stderr}`));
-        });
-      },
-    );
+    const pushResult = await runRsyncWithProgress(pushArgs, "push", onProgress);
 
     return {
       stdout: pullResult.stdout + pushResult.stdout,

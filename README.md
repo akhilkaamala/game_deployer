@@ -45,13 +45,13 @@ Each server supports:
 - `user`
 - `host`
 - `port` (optional)
-- `key` (PEM path)
+- `key` — leave empty in `deployment.config.json`; link your local `.pem` in the app UI or via `deployment.local.json` (gitignored)
 - `basePath` (deployment destination)
 - `jsonPath`
 - `cloudfrontDistribution`
 - `backupRoot` (remote backup storage)
 
-Use project-root-relative key paths, e.g. `./keys/blazeagrqa.pem` (outside `src`).
+Use local absolute paths via the app's **SSH Private Keys** settings or deploy screen. Paths are stored in `deployment.local.json` (gitignored). Do not commit `.pem` files or key paths to the repo.
 
 ## Commands
 

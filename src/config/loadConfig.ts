@@ -1,5 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
+import { mergeServerKeys, migrateKeysFromMainConfig } from "./localKeys";
+
+let keysMigrated = false;
 
 export const SUPPORTED_ENVS = ["dev", "qa", "preprod"];
 
@@ -50,6 +53,11 @@ function resolveRetention(
 }
 
 export function loadConfig({ rootDir, cliRetain }: { rootDir: string; cliRetain: number | null }) {
+  if (!keysMigrated) {
+    migrateKeysFromMainConfig(rootDir);
+    keysMigrated = true;
+  }
+
   const configPath = path.join(rootDir, "deployment.config.json");
   if (!fs.existsSync(configPath)) {
     throw new Error(`Missing config file at ${configPath}`);
@@ -61,7 +69,7 @@ export function loadConfig({ rootDir, cliRetain }: { rootDir: string; cliRetain:
   const sourcePath = configFile?.paths?.sourcePath ?? null;
   const targetPaths = configFile?.paths?.target ?? {};
   const backupsRoot = configFile?.paths?.backupsRoot ?? "./data/backups";
-  const servers = configFile?.servers ?? {};
+  const servers = mergeServerKeys(rootDir, configFile?.servers ?? {});
 
   const resolvedRetention = Object.fromEntries(
     SUPPORTED_ENVS.map((envName) => [

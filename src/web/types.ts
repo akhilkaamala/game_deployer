@@ -9,6 +9,7 @@ export interface DeployRequest {
   backupGames?: string | null;
   skipGameBackup?: boolean;
   skipJsonBackup?: boolean;
+  deployedBy?: string;
 }
 
 export interface DeployResponse {
@@ -31,4 +32,5 @@ export interface ConfigResponse {
   serverBasePaths: Record<string, string>;
   jsonRootPaths: Record<string, string>;
   serverInfo: Record<string, ServerInfo>;
+  sshKeyStatus?: Record<string, { linked: boolean; path: string | null }>;
 }

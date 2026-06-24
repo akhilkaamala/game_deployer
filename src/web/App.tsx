@@ -1,4 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState, useCallback } from "react";
+import { LoginPage } from "./components/LoginPage";
+import { AnimatePresence, motion as m } from "framer-motion";
 import { deploy, fetchConfig, stopProcess, streamGameSizes } from "./api";
 import type { ConfigResponse, DeployEnvironment } from "./types";
 import { Layout } from "./components/Layout";
@@ -36,7 +38,7 @@ import {
   HelpCircle,
   Terminal as TerminalIcon,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { cn } from "./lib/utils";
 
 import { ContentFolderCard } from "./components/ui/ContentFolderCard";
@@ -44,6 +46,12 @@ import { ContentFolderCard } from "./components/ui/ContentFolderCard";
 type DeployState = "idle" | "loading" | "done" | "error";
 
 export function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(
+    () => localStorage.getItem("aggr_auth") === "1"
+  );
+  const [currentUser, setCurrentUser] = useState<string>(
+    () => localStorage.getItem("aggr_user") || ""
+  );
   const initialPrefs = loadPrefs();
   const [config, setConfig] = useState<ConfigResponse | null>(null);
   const [sourceEnv, setSourceEnv] = useState<DeployEnvironment>(
@@ -60,6 +68,8 @@ export function App() {
     { level: string; message: string; timestamp?: string }[]
   >([]);
   const [gameSizes, setGameSizes] = useState<Record<string, number>>({});
+  const [gameUpdates, setGameUpdates] = useState<Record<string, number>>({});
+  const [sourceEnvRefreshKey, setSourceEnvRefreshKey] = useState(0);
   const [loadingSizes, setLoadingSizes] = useState(false);
   const [state, setState] = useState<DeployState>("idle");
 
@@ -172,21 +182,34 @@ export function App() {
         ]);
       });
 
+    return () => {};
+  }, []);
+
+  // Fetch sizes and timestamps when source environment changes
+  useEffect(() => {
     setLoadingSizes(true);
+    setGameSizes({});
+    setGameUpdates({});
     const stopStream = streamGameSizes(
-      (folder, size) => {
+      sourceEnv,
+      (folder, size, timestamp) => {
         setGameSizes((prev) => ({
           ...prev,
           [folder]: size,
           [folder.toLowerCase()]: size,
         }));
+        if (timestamp) {
+          setGameUpdates((prev) => ({
+            ...prev,
+            [folder]: timestamp,
+            [folder.toLowerCase()]: timestamp,
+          }));
+        }
       },
-      () => {
-        setLoadingSizes(false);
-      },
+      () => setLoadingSizes(false)
     );
     return () => stopStream();
-  }, []);
+  }, [sourceEnv, sourceEnvRefreshKey]);
 
   // Initial load
   useEffect(() => {
@@ -327,6 +350,7 @@ export function App() {
         dryRun,
         gamePath: gamePaths.length > 0 ? gamePaths.join(",") : null,
         backupGames: backupGames.length > 0 ? backupGames.join(",") : null,
+        deployedBy: currentUser || "admin",
       });
 
       setState("done");
@@ -335,7 +359,6 @@ export function App() {
           s.status === "running" ? { ...s, status: "success" } : s,
         ),
       );
-      // Mark all as success for now if done
       setSteps((prev) => prev.map((s) => ({ ...s, status: "success" })));
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
@@ -389,8 +412,37 @@ export function App() {
     }
   };
 
+  if (!isAuthenticated) {
+    return (
+      <AnimatePresence>
+        <LoginPage
+          onLogin={(username) => {
+            localStorage.setItem("aggr_auth", "1");
+            localStorage.setItem("aggr_user", username);
+            setCurrentUser(username);
+            setIsAuthenticated(true);
+          }}
+        />
+      </AnimatePresence>
+    );
+  }
+
   return (
-    <Layout>
+    <m.div
+      key="app"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.4 }}
+    >
+    <Layout
+      currentUser={currentUser}
+      onLogout={() => {
+        localStorage.removeItem("aggr_auth");
+        localStorage.removeItem("aggr_user");
+        setCurrentUser("");
+        setIsAuthenticated(false);
+      }}
+    >
       <div className="flex justify-end mb-6">
         <Button
           variant="outline"
@@ -416,6 +468,7 @@ export function App() {
               target={targetEnv}
               onSourceChange={(env) => {
                 setSourceEnv(env);
+                setSourceEnvRefreshKey(k => k + 1);
                 if (env === "dev") setTargetEnv("qa");
                 else if (env === "qa") setTargetEnv("preprod");
                 else if (env === "preprod") setTargetEnv("dev");
@@ -468,6 +521,7 @@ export function App() {
                   backupGames={backupGames}
                   gameFolderMap={config?.gameFolderMap ?? {}}
                   gameSizes={gameSizes}
+                  gameUpdates={gameUpdates}
                   loadingSizes={loadingSizes}
                   onToggle={toggleGame}
                   onToggleBackup={toggleBackup}
@@ -688,5 +742,6 @@ export function App() {
         </motion.div>
       </div>
     </Layout>
+    </m.div>
   );
 }

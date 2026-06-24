@@ -13,6 +13,7 @@ import {
   Command,
   Moon,
   Sun,
+  LogOut,
 } from "lucide-react";
 import { cn } from "../lib/utils";
 import { Button } from "./ui/Button";
@@ -24,14 +25,17 @@ import { SettingsManager } from "./Settings";
 import { BackupsManager } from "./BackupsManager";
 import { DeployHistory } from "./DeployHistory";
 import { ReleaseNotesManager } from "./ReleaseNotesManager";
+import { LogoMark } from "./LogoMark";
 
 declare var __APP_VERSION__: string;
 
 interface LayoutProps {
   children: React.ReactNode;
+  onLogout?: () => void;
+  currentUser?: string;
 }
 
-export function Layout({ children }: LayoutProps) {
+export function Layout({ children, onLogout, currentUser }: LayoutProps) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
   const [isDarkMode, setIsDarkMode] = React.useState(true);
   const [serverOnline, setServerOnline] = React.useState<boolean | null>(null);
@@ -72,7 +76,7 @@ export function Layout({ children }: LayoutProps) {
           );
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   // Phase 2: run SSH health check, update statuses when done
@@ -136,17 +140,13 @@ export function Layout({ children }: LayoutProps) {
         )}
       >
         <div className="flex items-center gap-3 px-6 h-16 border-b border-border">
-          <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-zinc-900 border border-white/5 flex items-center justify-center overflow-hidden group/logo transition-all hover:border-primary/50 hover:shadow-[0_0_15px_rgba(59,130,246,0.2)]">
-            <img
-              src="/favicon.svg"
-              alt="Logo"
-              className="w-[70%] h-[70%] object-contain"
-            />
+          <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-zinc-900 border border-white/5 flex items-center justify-center overflow-hidden p-1.5 group/logo transition-all hover:border-primary/50 hover:shadow-[0_0_15px_rgba(59,130,246,0.2)]">
+            <LogoMark />
           </div>
           {!isSidebarCollapsed && (
             <div className="flex flex-col">
               <span className="text-sm font-black tracking-tight text-white">
-                AG BLAZE
+                AGGR BLAZE
               </span>
               <span className="text-[10px] text-muted-foreground uppercase font-medium">
                 DevOps Center
@@ -171,7 +171,7 @@ export function Layout({ children }: LayoutProps) {
                 className={cn(
                   "w-5 h-5 shrink-0",
                   activePage !== item.label &&
-                    "group-hover:scale-110 transition-transform",
+                  "group-hover:scale-110 transition-transform",
                 )}
               />
               {!isSidebarCollapsed && (
@@ -182,6 +182,30 @@ export function Layout({ children }: LayoutProps) {
         </nav>
 
         <div className="p-3 border-t border-border space-y-1">
+          {/* Logged-in user badge */}
+          {currentUser && (
+            <div
+              className={cn(
+                "flex items-center gap-3 px-3 py-2 rounded-lg bg-white/5 border border-white/8 mb-1",
+                isSidebarCollapsed && "justify-center px-0"
+              )}
+            >
+              <div className="flex-shrink-0 w-7 h-7 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
+                <span className="text-[11px] font-black text-primary uppercase">
+                  {currentUser.charAt(0)}
+                </span>
+              </div>
+              {!isSidebarCollapsed && (
+                <div className="flex flex-col min-w-0">
+                  <span className="text-xs font-semibold text-white truncate capitalize">
+                    {currentUser}
+                  </span>
+                  <span className="text-[10px] text-zinc-500 font-medium">Logged in</span>
+                </div>
+              )}
+            </div>
+          )}
+
           <button
             onClick={() => setIsDarkMode(!isDarkMode)}
             className="flex items-center w-full gap-3 px-3 py-2 rounded-lg text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all"
@@ -195,6 +219,21 @@ export function Layout({ children }: LayoutProps) {
               <span className="text-sm font-medium">
                 {isDarkMode ? "Light Mode" : "Dark Mode"}
               </span>
+            )}
+          </button>
+
+          {/* Divider */}
+          <div className="my-1 h-px bg-border/60" />
+
+          {/* Logout */}
+          <button
+            onClick={onLogout}
+            title="Logout"
+            className="group flex items-center w-full gap-3 px-3 py-2 rounded-lg text-muted-foreground hover:bg-red-500/10 hover:text-red-400 transition-all duration-200"
+          >
+            <LogOut className="w-5 h-5 shrink-0 group-hover:translate-x-0.5 transition-transform duration-200" />
+            {!isSidebarCollapsed && (
+              <span className="text-sm font-medium">Logout</span>
             )}
           </button>
         </div>
@@ -223,16 +262,16 @@ export function Layout({ children }: LayoutProps) {
                 : activePage === "Release Notes"
                   ? "Build client release notes from game selection and export to Excel or PDF"
                   : activePage === "Deploy History"
-                  ? "Audit and review past deployment sessions and their status"
-                  : activePage === "System Health"
-                    ? "Monitor SSH connectivity and server metrics in real time"
-                    : activePage === "Games"
-                      ? "Manage the full game catalog — add, edit, or remove games"
-                      : activePage === "Settings"
-                        ? "Configure deployment defaults, backups, and UI preferences"
-                        : activePage === "Backups"
-                          ? "Manage historical environment snapshots and backup retention"
-                          : "Manage and monitor game releases across environments"}
+                    ? "Audit and review past deployment sessions and their status"
+                    : activePage === "System Health"
+                      ? "Monitor SSH connectivity and server metrics in real time"
+                      : activePage === "Games"
+                        ? "Manage the full game catalog — add, edit, or remove games"
+                        : activePage === "Settings"
+                          ? "Configure deployment defaults, backups, and UI preferences"
+                          : activePage === "Backups"
+                            ? "Manage historical environment snapshots and backup retention"
+                            : "Manage and monitor game releases across environments"}
             </p>
           </div>
           <div className="flex items-center gap-3">

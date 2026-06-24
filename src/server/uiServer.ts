@@ -5,6 +5,11 @@ import path from "node:path";
 import http from "node:http";
 import os from "node:os";
 import { loadConfig, SUPPORTED_ENVS } from "../config/loadConfig";
+import {
+  getAllSshKeys,
+  resolveKeyPath,
+  setSshKeyPath,
+} from "../config/localKeys";
 import { deployEnvironment } from "../deployment/deployService";
 import { runPostDeploymentCleanup } from "../deployment/cleanupScheduler";
 import { listBackups, streamBackups } from "../backup/backupManager";
@@ -29,10 +34,8 @@ if (!fs.existsSync(reactDistDir)) {
 }
 
 // ── SSH Key Bootstrap ──────────────────────────────────────────────────────
-// On cloud deployments (e.g. Render), SSH keys are not on disk.
-// Store each key's content as an env var: SSH_KEY_<ENVNAME> (e.g. SSH_KEY_QA)
-// On startup we write them to keys/<envname>.pem and update deployment.config.json
-// to use the relative path so deployments work correctly.
+// PEM files live outside the shared config (deployment.local.json or env vars).
+// On cloud deployments, set SSH_KEY_<ENVNAME> — keys are written to keys/ at runtime.
 (function bootstrapSshKeys() {
   const configPath = path.join(rootDir, "deployment.config.json");
   if (!fs.existsSync(configPath)) return;
@@ -45,9 +48,8 @@ if (!fs.existsSync(reactDistDir)) {
   }
 
   const keysDir = path.join(rootDir, "keys");
-  let configChanged = false;
 
-  for (const [envName, server] of Object.entries(config.servers || {}) as [
+  for (const [envName] of Object.entries(config.servers || {}) as [
     string,
     any,
   ][]) {
@@ -55,49 +57,16 @@ if (!fs.existsSync(reactDistDir)) {
     const keyContent = process.env[envVarName];
 
     if (keyContent) {
-      // Write the key from environment variable
       if (!fs.existsSync(keysDir)) fs.mkdirSync(keysDir, { recursive: true });
       const keyPath = path.join(keysDir, `${envName}.pem`);
       fs.writeFileSync(keyPath, keyContent.replace(/\\n/g, "\n"), {
         mode: 0o600,
       });
-      // Update config to use the new relative path
-      config.servers[envName].key = `./keys/${envName}.pem`;
-      configChanged = true;
+      setSshKeyPath(rootDir, envName, keyPath);
       console.log(
         `[bootstrap] Wrote SSH key for '${envName}' from env var ${envVarName}`,
       );
-    } else if (server.key && !path.isAbsolute(server.key)) {
-      // Already a relative path — resolve and check it exists
-      const resolved = path.resolve(rootDir, server.key);
-      if (!fs.existsSync(resolved)) {
-        console.warn(
-          `[bootstrap] Warning: key for '${envName}' not found at ${resolved}`,
-        );
-      }
-    } else if (
-      server.key &&
-      path.isAbsolute(server.key) &&
-      !fs.existsSync(server.key)
-    ) {
-      // Absolute path from local machine that doesn't exist here — try relative fallback
-      const fallback = path.join(keysDir, `${envName}.pem`);
-      if (fs.existsSync(fallback)) {
-        config.servers[envName].key = `./keys/${envName}.pem`;
-        configChanged = true;
-        console.log(
-          `[bootstrap] Remapped key for '${envName}' to relative fallback`,
-        );
-      } else {
-        console.warn(
-          `[bootstrap] Warning: no key available for '${envName}' — SSH will fail`,
-        );
-      }
     }
-  }
-
-  if (configChanged) {
-    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
   }
 })();
 // ──────────────────────────────────────────────────────────────────────────
@@ -312,7 +281,7 @@ async function serveFile(
   res.end(data);
 }
 
-async function saveHistory(rootDir: string, reports: any[]) {
+async function saveHistory(rootDir: string, reports: any[], deployedBy?: string) {
   const historyPath = path.join(rootDir, "data", "history.json");
   let history = [];
   try {
@@ -326,6 +295,7 @@ async function saveHistory(rootDir: string, reports: any[]) {
   const newEntry = {
     id: Date.now().toString(),
     timestamp: new Date().toISOString(),
+    deployedBy: deployedBy || "unknown",
     reports: Array.isArray(reports) ? reports : [reports],
     summary: {
       total: Array.isArray(reports) ? reports.length : 1,
@@ -363,7 +333,11 @@ async function handleApi(
   }
 
   if (req.method === "GET" && url.pathname === "/api/health") {
-    return sendJson(res, 200, { status: "ok", uptime: process.uptime() });
+    return sendJson(res, 200, {
+      status: "ok",
+      uptime: process.uptime(),
+      platform: process.platform,
+    });
   }
 
   if (req.method === "GET" && url.pathname === "/api/browse-key") {
@@ -372,13 +346,59 @@ async function handleApi(
         error: "Native file picker only supported on macOS",
       });
     }
-    const command = `osascript -e 'POSIX path of (choose file of type {"pem"} with prompt "Select your SSH Private Key (.pem)")'`;
+    const command = `osascript -e 'POSIX path of (choose file with prompt "Select your SSH Private Key (.pem)")'`;
     exec(command, (err, stdout) => {
       if (err) return sendJson(res, 200, { cancelled: true });
       const selectedPath = stdout.trim();
       return sendJson(res, 200, { path: selectedPath });
     });
     return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/ssh-keys") {
+    const keys = getAllSshKeys(rootDir);
+    const linked: Record<string, { path: string; exists: boolean }> = {};
+    for (const [name, keyPath] of Object.entries(keys)) {
+      const resolved = resolveKeyPath(rootDir, keyPath);
+      linked[name] = {
+        path: keyPath,
+        exists: Boolean(resolved && fs.existsSync(resolved)),
+      };
+    }
+    return sendJson(res, 200, { keys: linked });
+  }
+
+  const sshKeyMatch = url.pathname.match(/^\/api\/ssh-keys\/([^/]+)$/);
+  if (req.method === "PUT" && sshKeyMatch) {
+    const envName = decodeURIComponent(sshKeyMatch[1]);
+    const { path: keyPath } = await parseBody(req);
+    if (!keyPath?.trim()) {
+      return sendJson(res, 400, { error: "path is required" });
+    }
+    const resolved = resolveKeyPath(rootDir, keyPath);
+    if (!fs.existsSync(resolved)) {
+      return sendJson(res, 400, {
+        error: `SSH key not found at ${resolved}`,
+      });
+    }
+    const mainConfigPath = path.join(rootDir, "deployment.config.json");
+    const raw = JSON.parse(fs.readFileSync(mainConfigPath, "utf-8"));
+    if (!raw.servers?.[envName]) {
+      return sendJson(res, 404, { error: "Environment not found" });
+    }
+    setSshKeyPath(rootDir, envName, resolved);
+    logger.info(`SSH key linked for environment: ${envName}`);
+    return sendJson(res, 200, {
+      message: "Key linked successfully",
+      path: resolved,
+    });
+  }
+
+  if (req.method === "DELETE" && sshKeyMatch) {
+    const envName = decodeURIComponent(sshKeyMatch[1]);
+    setSshKeyPath(rootDir, envName, null);
+    logger.info(`SSH key unlinked for environment: ${envName}`);
+    return sendJson(res, 200, { message: "Key unlinked" });
   }
 
   if (req.method === "GET" && url.pathname === "/api/system-health") {
@@ -396,7 +416,7 @@ async function handleApi(
             : null;
         const distributionId =
           typeof srv.cloudfrontDistribution === "string" &&
-          srv.cloudfrontDistribution.trim()
+            srv.cloudfrontDistribution.trim()
             ? srv.cloudfrontDistribution.trim()
             : null;
         try {
@@ -479,7 +499,7 @@ async function handleApi(
       return sendJson(res, 409, {
         error: `Environment '${name}' already exists`,
       });
-    raw.servers[name] = serverConfig;
+    raw.servers[name] = { ...serverConfig, key: "" };
     fs.writeFileSync(configPath, JSON.stringify(raw, null, 2));
     return sendJson(res, 201, {
       message: `Environment '${name}' created`,
@@ -493,23 +513,11 @@ async function handleApi(
     const server = raw.servers[name];
     if (!server) return sendJson(res, 404, { error: "Environment not found" });
 
-    let keyPath = server.key;
-    if (!keyPath || keyPath.startsWith("./keys/")) {
-      const keysDir = path.resolve(rootDir, "keys");
-      if (!fs.existsSync(keysDir)) fs.mkdirSync(keysDir, { recursive: true });
-      keyPath = path.join(keysDir, `${name}.pem`);
-    } else if (!path.isAbsolute(keyPath)) {
-      keyPath = path.resolve(rootDir, keyPath);
-    }
-
-    const dir = path.dirname(keyPath);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    const keysDir = path.resolve(rootDir, "keys");
+    if (!fs.existsSync(keysDir)) fs.mkdirSync(keysDir, { recursive: true });
+    const keyPath = path.join(keysDir, `${name}.pem`);
     fs.writeFileSync(keyPath, keyContent, { mode: 0o600 });
-
-    if (!server.key) {
-      server.key = `./keys/${name}.pem`;
-      fs.writeFileSync(configPath, JSON.stringify(raw, null, 2));
-    }
+    setSshKeyPath(rootDir, name, keyPath);
 
     logger.info(`SSH Key updated for environment: ${name}`);
     return sendJson(res, 200, {
@@ -527,7 +535,25 @@ async function handleApi(
       return sendJson(res, 404, {
         error: `Environment '${envName}' not found`,
       });
-    raw.servers[envName] = { ...raw.servers[envName], ...body };
+
+    if (body.key !== undefined) {
+      const keyValue = String(body.key || "").trim();
+      if (keyValue) {
+        const resolved = resolveKeyPath(rootDir, keyValue);
+        if (!fs.existsSync(resolved)) {
+          return sendJson(res, 400, {
+            error: `SSH key not found at ${resolved}`,
+          });
+        }
+        setSshKeyPath(rootDir, envName, resolved);
+      } else {
+        setSshKeyPath(rootDir, envName, null);
+      }
+      delete body.key;
+      raw.servers[envName].key = "";
+    }
+
+    raw.servers[envName] = { ...raw.servers[envName], ...body, key: "" };
     fs.writeFileSync(configPath, JSON.stringify(raw, null, 2));
     return sendJson(res, 200, {
       message: `Environment '${envName}' updated`,
@@ -633,12 +659,26 @@ async function handleApi(
 
   if (req.method === "GET" && url.pathname === "/api/config") {
     const config = loadConfig({ rootDir, cliRetain: null });
+    const sshKeys = getAllSshKeys(rootDir);
+    const sshKeyStatus = Object.fromEntries(
+      SUPPORTED_ENVS.map((name) => {
+        const keyPath = config.servers?.[name]?.key || "";
+        return [
+          name,
+          {
+            linked: Boolean(keyPath && fs.existsSync(keyPath)),
+            path: sshKeys[name] || null,
+          },
+        ];
+      }),
+    );
     return sendJson(res, 200, {
       environments: SUPPORTED_ENVS,
       retention: config.backupRetention,
       gameCatalog: extractGameCatalog(config),
       gameFolderMap: config.gameFolderMap || {},
       sourcePath: config.paths?.sourcePath || "",
+      sshKeyStatus,
       serverBasePaths: Object.fromEntries(
         Object.entries(config.servers).map(([name, s]: any) => [
           name,
@@ -758,38 +798,51 @@ async function handleApi(
 
     const config = loadConfig({ rootDir, cliRetain: null });
     const gameBase = config.paths?.sourcePath;
-    const devServer = config.servers?.dev;
+    const envName = url.searchParams.get("env") || "dev";
+    const targetServer = config.servers?.[envName];
 
-    if (!gameBase || !devServer) {
+    if (!gameBase || !targetServer) {
       res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
       res.end();
       return;
     }
 
-    const resolvedKey = path.resolve(rootDir, devServer.key);
+    const resolvedKey = path.resolve(rootDir, targetServer.key);
     const remoteBase = gameBase.endsWith("/") ? gameBase.slice(0, -1) : gameBase;
 
-    logger.info(`Streaming remote game sizes from ${devServer.host}...`);
+    logger.info(`Streaming remote game sizes from ${targetServer.host}...`);
 
     const { spawnSsh } = await import("../utils/ssh");
-    // Use a shell loop to get sizes one by one on the remote side
-    const command = `for d in ${remoteBase}/*/ ; do [ -d "$d" ] && du -sk "$d" ; done`;
+    // Use a shell loop to get sizes and mod time one by one on the remote side
+    const command = `for d in ${remoteBase}/*/ ; do [ -d "$d" ] && echo "$(du -sk "$d" | cut -f1) $(stat -c %Y "$d" 2>/dev/null || stat -f %m "$d" 2>/dev/null || echo 0) $d" ; done`;
 
     spawnSsh(
-      { ...devServer, key: resolvedKey },
+      { ...targetServer, key: resolvedKey },
       command,
       (line) => {
-        const match = line.trim().match(/^(\d+)\s+(.+)$/);
+        const match = line.trim().match(/^(\d+)\s+(\d+)\s+(.+)$/);
         if (match) {
           const kb = Number.parseInt(match[1], 10);
-          const fullPath = match[2].replace(/\/$/, "");
+          const timestamp = Number.parseInt(match[2], 10);
+          const fullPath = match[3].replace(/\/$/, "");
           const folderName = path.basename(fullPath);
           const size = kb * 1024;
-          
+
           // Update local cache
           cachedSizes[folderName] = size;
-          
-          res.write(`data: ${JSON.stringify({ folder: folderName, size })}\n\n`);
+
+          res.write(`data: ${JSON.stringify({ folder: folderName, size, timestamp })}\n\n`);
+        } else {
+          // Fallback if stat fails and it just outputs size and path
+          const fallbackMatch = line.trim().match(/^(\d+)\s+(.+)$/);
+          if (fallbackMatch && !fallbackMatch[2].match(/^\d+\s+/)) {
+            const kb = Number.parseInt(fallbackMatch[1], 10);
+            const fullPath = fallbackMatch[2].replace(/\/$/, "");
+            const folderName = path.basename(fullPath);
+            const size = kb * 1024;
+            cachedSizes[folderName] = size;
+            res.write(`data: ${JSON.stringify({ folder: folderName, size })}\n\n`);
+          }
         }
       },
       (errLine) => {
@@ -954,10 +1007,11 @@ async function handleApi(
     const gamePath = body.gamePath ? String(body.gamePath).trim() : null;
     const backupGames = body.backupGames
       ? String(body.backupGames)
-          .split(",")
-          .map((s: string) => s.trim())
+        .split(",")
+        .map((s: string) => s.trim())
       : [];
     const skipJsonBackup = Boolean(body.skipJsonBackup);
+    const deployedBy = body.deployedBy ? String(body.deployedBy).trim() : "unknown";
 
     if (!SUPPORTED_ENVS.includes(sourceEnv))
       return sendJson(res, 400, { error: `Invalid source env: ${sourceEnv}` });
@@ -1025,7 +1079,7 @@ async function handleApi(
       }
     }
 
-    await saveHistory(rootDir, deploymentReports);
+    await saveHistory(rootDir, deploymentReports, deployedBy);
 
     return sendJson(res, 200, {
       deployment:

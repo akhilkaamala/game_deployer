@@ -15,6 +15,7 @@ import {
   Layers,
   ArrowRight,
   Server,
+  User,
 } from "lucide-react";
 import { Card, CardContent } from "./ui/Card";
 import { Button } from "./ui/Button";
@@ -39,6 +40,7 @@ interface DeployReport {
 interface HistoryEntry {
   id: string;
   timestamp: string;
+  deployedBy?: string;
   reports: DeployReport[];
   summary: {
     total: number;
@@ -112,11 +114,13 @@ export function DeployHistory() {
   const filteredHistory = history.filter((entry) => {
     const q = searchQuery.toLowerCase();
     if (!entry.reports || !Array.isArray(entry.reports)) return false;
-    return entry.reports.some(
-      (r) =>
-        (r.environment?.toLowerCase() || "").includes(q) ||
-        (r.gamePath?.toLowerCase() || "").includes(q) ||
-        (r.deploymentVersion?.toLowerCase() || "").includes(q),
+    return (
+      entry.reports.some(
+        (r) =>
+          (r.environment?.toLowerCase() || "").includes(q) ||
+          (r.gamePath?.toLowerCase() || "").includes(q) ||
+          (r.deploymentVersion?.toLowerCase() || "").includes(q),
+      ) || (entry.deployedBy?.toLowerCase() || "").includes(q)
     );
   });
 
@@ -235,6 +239,15 @@ export function DeployHistory() {
                           {new Date(entry.timestamp).toLocaleTimeString()}
                         </span>
                         <span className="w-1 h-1 rounded-full bg-zinc-700" />
+                        {entry.deployedBy && (
+                          <>
+                            <span className="flex items-center gap-1 text-primary/80">
+                              <User className="w-3 h-3" />
+                              {entry.deployedBy}
+                            </span>
+                            <span className="w-1 h-1 rounded-full bg-zinc-700" />
+                          </>
+                        )}
                         <span
                           className={cn(
                             "px-1.5 py-0.5 rounded text-[10px] font-black uppercase",
@@ -252,6 +265,17 @@ export function DeployHistory() {
                   </div>
 
                   <div className="flex items-center gap-4">
+                    {entry.deployedBy && (
+                      <div className="hidden sm:flex flex-col items-end">
+                        <span className="text-[10px] text-zinc-500 uppercase font-black">
+                          Deployed By
+                        </span>
+                        <span className="text-xs font-semibold text-primary/80 flex items-center gap-1">
+                          <User className="w-3 h-3" />
+                          {entry.deployedBy}
+                        </span>
+                      </div>
+                    )}
                     <div className="hidden sm:flex flex-col items-end">
                       <span className="text-[10px] text-zinc-500 uppercase font-black">
                         Session ID

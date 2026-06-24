@@ -41,7 +41,7 @@ interface EnvMap {
 }
 
 const FIELD_META: {
-  key: keyof ServerConfig;
+  key: keyof Omit<ServerConfig, "key">;
   label: string;
   icon: React.ElementType;
   placeholder: string;
@@ -65,12 +65,6 @@ const FIELD_META: {
     icon: HardDrive,
     placeholder: "e.g. 22 or leave blank",
     type: "number",
-  },
-  {
-    key: "key",
-    label: "Key Path",
-    icon: Key,
-    placeholder: "e.g. ./keys/blazeagrdev.pem",
   },
   {
     key: "basePath",
@@ -208,7 +202,11 @@ export function EnvironmentsManager() {
     setError(null);
     try {
       const { mode, name, data } = modal;
-      const payload = mode === "create" ? { name, ...data } : data;
+      const { key: _ignoredKey, ...serverData } = data;
+      const payload =
+        mode === "create"
+          ? { name, ...serverData, key: "" }
+          : { ...serverData, key: "" };
       const res = await fetch(
         getApiUrl(
           mode === "create" ? "/api/environments" : `/api/environments/${name}`,
@@ -382,7 +380,10 @@ export function EnvironmentsManager() {
                   {[
                     { label: "User", value: config.user },
                     { label: "Port", value: config.port ?? "22 (default)" },
-                    { label: "Key", value: config.key },
+                    {
+                      label: "SSH Key",
+                      value: config.key || "Link in Settings → SSH Keys",
+                    },
                     { label: "Base Path", value: config.basePath },
                     { label: "JSON Root", value: config.jsonRootPath },
                     { label: "Backup Root", value: config.backupRoot },

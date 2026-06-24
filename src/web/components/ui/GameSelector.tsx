@@ -22,6 +22,7 @@ interface GameSelectorProps {
   backupGames: string[];
   gameFolderMap: Record<string, any>;
   gameSizes?: Record<string, number>;
+  gameUpdates?: Record<string, number>;
   loadingSizes?: boolean;
   onToggle: (game: string) => void;
   onToggleBackup: (game: string) => void;
@@ -38,6 +39,7 @@ export function GameSelector({
   backupGames,
   gameFolderMap,
   gameSizes = {},
+  gameUpdates = {},
   loadingSizes = false,
   onToggle,
   onToggleBackup,
@@ -311,6 +313,7 @@ export function GameSelector({
                       backupGames={backupGames}
                       gameFolderMap={gameFolderMap}
                       gameSizes={gameSizes}
+                      gameUpdates={gameUpdates}
                       loadingSizes={loadingSizes}
                       onToggle={onToggle}
                       onToggleBackup={onToggleBackup}

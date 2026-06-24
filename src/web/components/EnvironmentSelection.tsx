@@ -2,6 +2,7 @@ import React from "react";
 import { Badge } from "./ui/Badge";
 import { cn } from "../lib/utils";
 import { getApiUrl } from "../api";
+import { SSH_KEYS_UPDATED_EVENT } from "./SshKeyLinker";
 import type { DeployEnvironment } from "../types";
 import { EnvironmentNode } from "./ui/EnvironmentNode";
 import { PipelineConnector } from "./ui/PipelineConnector";
@@ -58,7 +59,12 @@ export function EnvironmentSelection({
       () => envs.forEach((env) => checkStatus(env)),
       30000,
     );
-    return () => clearInterval(interval);
+    const onKeysUpdated = () => envs.forEach((env) => checkStatus(env));
+    window.addEventListener(SSH_KEYS_UPDATED_EVENT, onKeysUpdated);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener(SSH_KEYS_UPDATED_EVENT, onKeysUpdated);
+    };
   }, [checkStatus]);
 
   return (

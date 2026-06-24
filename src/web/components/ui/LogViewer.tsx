@@ -25,6 +25,23 @@ interface LogViewerProps {
   onDownload?: () => void;
 }
 
+const PROGRESS_PHASE_LABELS: Record<string, string> = {
+  pull: "pull from source",
+  push: "push to target",
+  done: "complete",
+  finalize: "finalizing",
+  verify: "verifying paths",
+  invalidate: "invalidating CDN",
+  "pulling from source": "pull from source",
+  "pushing to target": "push to target",
+};
+
+function formatProgressPhase(raw: string | undefined): string | null {
+  if (!raw) return null;
+  const key = raw.split(" — ")[0].trim().toLowerCase();
+  return PROGRESS_PHASE_LABELS[key] || key;
+}
+
 const GAME_COLORS = [
   { text: "text-cyan-400", bg: "bg-cyan-400" },
   { text: "text-purple-400", bg: "bg-purple-400" },
@@ -187,7 +204,11 @@ export function LogViewer({
 
           const isComp = gLogs.some((l) => {
             const m = l.message.toLowerCase();
-            return m.includes("syncing completed") || m.includes("success");
+            return (
+              m.includes("syncing completed") ||
+              m.includes(" : success") ||
+              (m.includes("[progress]") && m.includes("100%"))
+            );
           });
 
           if (isComp) {
@@ -205,7 +226,9 @@ export function LogViewer({
                 m.includes("syncing from") ||
                 m.includes("connecting") ||
                 m.includes("invalidating") ||
-                m.includes("taking")
+                m.includes("taking") ||
+                m.includes("verifying deployment") ||
+                m.includes(": still ")
               );
             });
 
@@ -252,7 +275,9 @@ export function LogViewer({
                   const isCompleted = gLogs.some((l) => {
                     const m = l.message.toLowerCase();
                     return (
-                      m.includes("syncing completed") || m.includes("success")
+                      m.includes("syncing completed") ||
+                      m.includes(" : success") ||
+                      (m.includes("[progress]") && m.includes("100%"))
                     );
                   });
                   const isActive =
@@ -264,17 +289,21 @@ export function LogViewer({
                         m.includes("syncing from") ||
                         m.includes("connecting") ||
                         m.includes("invalidating") ||
-                        m.includes("taking")
+                        m.includes("taking") ||
+                        m.includes("verifying deployment") ||
+                        m.includes(": still ")
                       );
                     });
 
                   const stepProgress = Math.floor(simProgress[name] || 0);
-                  const lastMsgLower =
-                    gLogs[gLogs.length - 1]?.message.toLowerCase() || "";
-                  const showPercentage =
-                    (lastMsgLower.includes("syncing") ||
-                      lastMsgLower.includes("[progress]")) &&
-                    !lastMsgLower.includes("completed");
+                  const latestProgressLog = gLogs
+                    .filter((l) => l.message.includes("[PROGRESS]"))
+                    .pop();
+                  const phaseMatch = latestProgressLog?.message.match(
+                    /\(\s*([^)]+)\s*\)/,
+                  );
+                  const phaseHint = formatProgressPhase(phaseMatch?.[1]);
+                  const showPercentage = isActive && stepProgress > 0;
 
                   return (
                     <React.Fragment key={name}>
@@ -288,7 +317,11 @@ export function LogViewer({
                             ? "opacity-40"
                             : "opacity-100",
                         )}
-                        title={name}
+                        title={
+                          phaseHint
+                            ? `${name} — ${stepProgress}% — ${phaseHint}`
+                            : name
+                        }
                       >
                         <div
                           className={cn(
@@ -316,8 +349,12 @@ export function LogViewer({
                           {name}
                           {showPercentage &&
                             (stepProgress > 0 || isCompleted) && (
-                              <span className="text-[9px] opacity-70 tabular-nums">
-                                ({stepProgress}%)
+                              <span className="text-[9px] opacity-70 tabular-nums whitespace-nowrap">
+                                ({stepProgress}%
+                                {phaseHint && !isCompleted
+                                  ? ` · ${phaseHint}`
+                                  : ""}
+                                )
                               </span>
                             )}
                         </span>

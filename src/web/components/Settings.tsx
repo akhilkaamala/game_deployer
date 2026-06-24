@@ -22,10 +22,7 @@ import {
   Key,
   Terminal,
   Upload,
-  Lock,
   Trash2,
-  Plus,
-  Search,
   Loader2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/Card";
@@ -33,6 +30,7 @@ import { Button } from "./ui/Button";
 import { Input } from "./ui/Input";
 import { Modal } from "./ui/Modal";
 import { getApiUrl } from "../api";
+import { SshKeyLinker } from "./SshKeyLinker";
 import { cn } from "../lib/utils";
 
 // LocalStorage key for all client-side preferences
@@ -246,36 +244,7 @@ export function SettingsManager() {
   const [configJson, setConfigJson] = useState<string>("");
   const [copied, setCopied] = useState(false);
   const [envs, setEnvs] = useState<string[]>(["dev", "qa", "preprod"]);
-  const [keyEnv, setKeyEnv] = useState("");
-  const [keyContent, setKeyContent] = useState("");
-  const [keySaving, setKeySaving] = useState(false);
-  const [keyError, setKeyError] = useState("");
-  const [keySuccess, setKeySuccess] = useState(false);
-  const [linkedKeys, setLinkedKeys] = useState<Record<string, string>>({});
-  const [editingEnv, setEditingEnv] = useState<string | null>(null);
-  const [isBrowsing, setIsBrowsing] = useState(false);
-  const [systemInfo, setSystemInfo] = useState<any>(null);
   const [cleaningEnv, setCleaningEnv] = useState<string | null>(null);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
-
-  // Prevent browser from opening files on drop
-  useEffect(() => {
-    const preventDefault = (e: DragEvent) => e.preventDefault();
-    window.addEventListener("dragover", preventDefault);
-    window.addEventListener("drop", preventDefault);
-    return () => {
-      window.removeEventListener("dragover", preventDefault);
-      window.removeEventListener("drop", preventDefault);
-    };
-  }, []);
-
-  // Load system info
-  useEffect(() => {
-    fetch(getApiUrl("/api/system-health"))
-      .then((r) => r.json())
-      .then((data) => setSystemInfo(data.server))
-      .catch(() => {});
-  }, []);
 
   // Load server settings
   useEffect(() => {
@@ -299,114 +268,16 @@ export function SettingsManager() {
       .then((r) => r.json())
       .then((d) => {
         setConfigJson(JSON.stringify(d, null, 2));
-        const servers = Object.keys(d.servers || {});
+        const servers = Object.keys(d.serverBasePaths || {});
         if (servers.length > 0) {
           setEnvs(servers);
         }
-        const linked: Record<string, string> = {};
-        Object.entries(d.servers || {}).forEach(([name, s]: [string, any]) => {
-          if (s.key && !s.key.startsWith("./keys/")) linked[name] = s.key;
-        });
-        setLinkedKeys(linked);
       })
       .catch(() => {});
   }, []);
 
-  const handleBrowse = async () => {
-    setIsBrowsing(true);
-    try {
-      const res = await fetch(getApiUrl("/api/browse-key"));
-      const data = await res.json();
-      if (data.path) {
-        setKeyContent(data.path);
-      }
-    } catch (e) {
-      // Fallback: If server is not connected, open standard picker
-      fileInputRef.current?.click();
-    } finally {
-      setIsBrowsing(false);
-    }
-  };
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setKeyContent(file.name);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent, env: string) => {
-    e.preventDefault();
-    const files = e.dataTransfer.files;
-    if (files && files.length > 0) {
-      // On Mac, sometimes we can get the path from the file object in local environments
-      // but usually we rely on the OS pasting it.
-      // If a file is dropped, we set the name and show a hint.
-      const file = files[0];
-      setEditingEnv(env);
-      setKeyContent(file.name);
-    }
-  };
-
   const updatePref = <K extends keyof UIPrefs>(key: K, value: UIPrefs[K]) => {
     setPrefs((p) => ({ ...p, [key]: value }));
-  };
-
-  const handleSaveKey = async (
-    envOverride?: string,
-    contentOverride?: string,
-  ) => {
-    const env = envOverride || keyEnv;
-    const content = contentOverride || keyContent;
-    if (!env || !content) return;
-    setKeySaving(true);
-    setKeyError("");
-    setKeySuccess(false);
-    try {
-      const res = await fetch(getApiUrl(`/api/environments/${env}`), {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key: content }),
-      });
-      if (!res.ok) throw new Error("Failed to update key path");
-      setKeySuccess(true);
-      setKeyContent("");
-      setEditingEnv(null);
-      setLinkedKeys((prev) => ({ ...prev, [env]: content }));
-    } catch (e: any) {
-      setKeyError(e.message);
-    } finally {
-      setKeySaving(false);
-    }
-  };
-
-  const handleRemoveKey = async (env: string) => {
-    setModal({
-      isOpen: true,
-      title: "Remove Key Connection?",
-      description: `Clear the .pem path for ${(env || "").toUpperCase()}?`,
-      type: "confirm",
-      onConfirm: async () => {
-        setModal((prev) => ({ ...prev, isOpen: false }));
-        try {
-          // Setting key to empty in config
-          const res = await fetch(getApiUrl(`/api/environments/${env}`), {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ key: "" }),
-          });
-          if (res.ok) {
-            setLinkedKeys((prev) => {
-              const next = { ...prev };
-              delete next[env];
-              return next;
-            });
-          }
-        } catch (err) {
-          console.error("Failed to remove key path", err);
-        }
-      },
-    });
   };
 
   const handleSaveUI = () => {
@@ -586,179 +457,10 @@ export function SettingsManager() {
       <Section
         icon={Key}
         title="SSH Private Keys"
-        description="Link your local .pem files to enable secure connectivity. Select an environment to set its path."
-        saving={keySaving}
-        saved={keySuccess}
+        description="Browse to local .pem files on your machine. Paths are saved in deployment.local.json (gitignored), never in the shared project config."
       >
         <div className="space-y-4">
-          <div className="grid grid-cols-1 gap-3">
-            {envs.map((env) => (
-              <div
-                key={env}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => handleDrop(e, env)}
-                className={cn(
-                  "flex flex-col gap-3 p-4 rounded-xl border transition-all",
-                  editingEnv === env
-                    ? "bg-primary/5 border-primary/20 shadow-lg ring-1 ring-primary/20"
-                    : "bg-white/5 border-white/5 hover:border-white/10",
-                )}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={cn(
-                        "p-1.5 rounded-lg",
-                        linkedKeys[env]
-                          ? "bg-emerald-500/10 text-emerald-400"
-                          : "bg-zinc-500/10 text-zinc-500",
-                      )}
-                    >
-                      {linkedKeys[env] ? (
-                        <Lock className="w-3.5 h-3.5" />
-                      ) : (
-                        <Plus className="w-3.5 h-3.5" />
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
-                        {env}
-                      </p>
-                      <p className="text-xs text-zinc-500 font-mono truncate max-w-[200px] md:max-w-md">
-                        {linkedKeys[env] || "No local path linked"}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setEditingEnv(editingEnv === env ? null : env);
-                        setKeyContent(linkedKeys[env] || "");
-                      }}
-                      className="h-8 text-[10px] bg-white/5"
-                    >
-                      {linkedKeys[env] ? "Update Path" : "Link Key"}
-                    </Button>
-                    {linkedKeys[env] && (
-                      <button
-                        onClick={() => handleRemoveKey(env)}
-                        className="p-1.5 rounded-lg hover:bg-red-500/10 text-zinc-600 hover:text-red-400 transition-colors"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {editingEnv === env && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    className="space-y-3 pt-3 border-t border-white/10"
-                  >
-                    <>
-                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-2">
-                        <FolderOpen className="w-3 h-3" /> Full Local Path to
-                        .PEM
-                      </label>
-                      <div className="flex gap-2">
-                        <div className="relative flex-1">
-                          <Input
-                            placeholder="e.g. /home/ubuntu/keys/dev.pem"
-                            value={keyContent}
-                            onChange={(e) => setKeyContent(e.target.value)}
-                            className="bg-black/20 border-white/10 text-xs font-mono h-9 pr-24"
-                            autoFocus
-                          />
-                          {systemInfo?.platform === "darwin" && (
-                            <button
-                              onClick={handleBrowse}
-                              disabled={isBrowsing}
-                              className="absolute right-1 top-1 bottom-1 px-2 rounded-md bg-white/5 hover:bg-white/10 border border-white/10 text-[9px] font-bold text-zinc-400 flex items-center gap-1.5 transition-colors disabled:opacity-50"
-                            >
-                              {isBrowsing ? (
-                                <Loader2 className="w-2.5 h-2.5 animate-spin" />
-                              ) : (
-                                <Search className="w-2.5 h-2.5" />
-                              )}
-                              Browse...
-                            </button>
-                          )}
-                        </div>
-                        <input
-                          type="file"
-                          ref={fileInputRef}
-                          className="hidden"
-                          accept=".pem"
-                          onChange={handleFileSelect}
-                        />
-                        <Button
-                          onClick={() => handleSaveKey(env, keyContent)}
-                          disabled={keySaving || !keyContent.trim()}
-                          size="sm"
-                          className="h-9 px-4"
-                        >
-                          Apply
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          onClick={() => setEditingEnv(null)}
-                          size="sm"
-                          className="h-9"
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-
-                      {systemInfo?.platform === "darwin" ? (
-                        <div className="flex items-center gap-2 p-2 rounded-lg bg-blue-500/5 border border-blue-500/10">
-                          <div className="p-1 rounded bg-blue-500/10 text-blue-400">
-                            <Info className="w-3 h-3" />
-                          </div>
-                          <p className="text-[9px] text-zinc-400 leading-tight">
-                            <span className="font-bold text-blue-400">
-                              Mac Tip:
-                            </span>{" "}
-                            Drag your .pem file from Finder directly into the
-                            box above to get the{" "}
-                            <span className="text-zinc-200">
-                              Full Absolute Path
-                            </span>{" "}
-                            automatically!
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-500/5 border border-amber-500/10">
-                          <div className="p-1 rounded bg-amber-500/10 text-amber-400">
-                            <Shield className="w-3 h-3" />
-                          </div>
-                          <p className="text-[9px] text-zinc-400 leading-tight">
-                            <span className="font-bold text-amber-400">
-                              Cloud Tip:
-                            </span>{" "}
-                            For Render/Cloud, set an environment variable named{" "}
-                            <code className="text-zinc-200">
-                              SSH_KEY_
-                              {(env || "").toUpperCase().replace(/-/g, "_")}
-                            </code>{" "}
-                            with your .pem file content. The app will
-                            automatically bootstrap it on startup.
-                          </p>
-                        </div>
-                      )}
-                    </>
-                    {keyError && (
-                      <p className="text-[10px] text-red-400 font-medium">
-                        {keyError}
-                      </p>
-                    )}
-                  </motion.div>
-                )}
-              </div>
-            ))}
-          </div>
+          <SshKeyLinker envs={envs} collapsible={false} />
           <div className="mt-6 pt-4 border-t border-white/5 space-y-4">
             <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
               Manual Cleanup

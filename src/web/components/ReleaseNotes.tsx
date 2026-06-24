@@ -57,7 +57,7 @@ export function ReleaseNotes({
   clientSteps = [],
   onClientStepsChange,
 }: ReleaseNotesProps) {
-  const [stepsEditMode, setStepsEditMode] = useState(true);
+  const [stepsEditMode, setStepsEditMode] = useState(false);
 
   const data = useMemo(
     () =>
@@ -194,11 +194,11 @@ export function ReleaseNotes({
                             className={cn(
                               "px-3 py-2.5 font-mono text-zinc-300 align-top",
                               col.key === "component" &&
-                                "font-bold text-blue-400 whitespace-nowrap",
+                              "font-bold text-blue-400 whitespace-nowrap",
                               col.key !== "component" && "break-all",
                               col.key === "source" && "whitespace-nowrap",
                               col.key === "destinationPath" &&
-                                "text-emerald-400/90",
+                              "text-emerald-400/90",
                             )}
                           >
                             {row[col.key] || (

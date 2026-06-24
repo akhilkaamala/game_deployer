@@ -226,16 +226,45 @@ export async function deployEnvironment({
   logger.info(
     `${dryRun ? "[DRY RUN] " : ""}Syncing ${displayName} from ${sourceEnv.toUpperCase()} to ${targetEnv.toUpperCase()}...`,
   );
-  await runRemoteToRemoteRsync(
-    sourceServer,
-    targetServer,
-    sourcePath,
-    targetPath,
-    dryRun,
-    (percent) => {
-      logger.info(`[PROGRESS] ${displayName} ${percent}%`);
-    },
-  );
+
+  let lastLoggedPercent = -1;
+  let lastProgressAt = Date.now();
+  let currentPhase: "pull" | "push" | null = null;
+  const stallHeartbeat = setInterval(() => {
+    if (
+      lastLoggedPercent >= 90 &&
+      Date.now() - lastProgressAt > 30_000 &&
+      currentPhase
+    ) {
+      const phaseLabel =
+        currentPhase === "pull" ? "pull from source" : "push to target";
+      logger.info(
+        `${displayName}: still ${phaseLabel} at ${lastLoggedPercent}% — rsync may pause near the end while deleting obsolete files`,
+      );
+      lastProgressAt = Date.now();
+    }
+  }, 30_000);
+
+  try {
+    await runRemoteToRemoteRsync(
+      sourceServer,
+      targetServer,
+      sourcePath,
+      targetPath,
+      dryRun,
+      (percent, phase) => {
+        currentPhase = phase;
+        lastProgressAt = Date.now();
+        if (percent === lastLoggedPercent) return;
+        lastLoggedPercent = percent;
+        const phaseTag = phase === "pull" ? "pull" : "push";
+        logger.info(`[PROGRESS] ${displayName} ${percent}% (${phaseTag})`);
+      },
+    );
+  } finally {
+    clearInterval(stallHeartbeat);
+  }
+
   logger.info(
     `${dryRun ? "[DRY RUN] " : ""}Syncing Completed for ${displayName}`,
   );
@@ -251,12 +280,17 @@ export async function deployEnvironment({
 
   await runSsh(targetServer, `test -d ${shSingleQuote(targetPath)}`);
 
+  logger.info(`Verifying deployment paths for ${displayName}`);
   logger.info(`Invalidating ${targetEnv.toUpperCase()} for ${displayName}`);
+  logger.info(
+    `Invalidating CloudFront cache for ${displayName} (this can take a few minutes)`,
+  );
   const cloudfront = await runCloudFrontInvalidationIfConfigured(
     targetServer,
     targetEnv,
   );
   logger.info(`Invalidating Completed for ${displayName}`);
+  logger.info(`[PROGRESS] ${displayName} 100% (done)`);
 
   const report = {
     environment: targetEnv,

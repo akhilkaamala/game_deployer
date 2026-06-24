@@ -15,6 +15,7 @@ interface GameCardProps {
   folderSize?: number;
   isLoadingSizes?: boolean;
   hideBackup?: boolean;
+  lastUpdate?: number;
 }
 
 function formatBytes(bytes: number, decimals = 1) {
@@ -24,6 +25,23 @@ function formatBytes(bytes: number, decimals = 1) {
   const sizes = ["B", "KB", "MB", "GB", "TB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return `${Number.parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+}
+
+function formatUpdateDate(ts?: number) {
+  if (!ts) return null;
+  const d = new Date(ts * 1000);
+  const day = d.getDate();
+  const month = d.toLocaleString("en-US", { month: "short" });
+  const year = d.getFullYear();
+  let hours = d.getHours();
+  const minutes = d.getMinutes().toString().padStart(2, "0");
+  const ampm = hours >= 12 ? "PM" : "AM";
+  hours = hours % 12;
+  hours = hours ? hours : 12;
+  return {
+    date: `${day} ${month}, ${year}`,
+    time: `${hours}:${minutes}${ampm}`,
+  };
 }
 
 export const GameCard = React.memo(
@@ -39,6 +57,7 @@ export const GameCard = React.memo(
     folderSize,
     isLoadingSizes = false,
     hideBackup = false,
+    lastUpdate,
   }: GameCardProps) => {
     const [imgError, setImgError] = React.useState(false);
     const imageUrl = explicitImageUrl;
@@ -204,6 +223,16 @@ export const GameCard = React.memo(
           >
             {game}
           </p>
+          {(() => {
+            const dt = formatUpdateDate(lastUpdate);
+            if (!dt) return null;
+            return (
+              <div className="text-[8px] font-mono font-medium text-zinc-500 mt-1 leading-tight text-center">
+                <p>{dt.date}</p>
+                <p>{dt.time}</p>
+              </div>
+            );
+          })()}
         </div>
       </motion.div>
     );
@@ -220,6 +249,7 @@ interface GameGridProps {
   onToggle: (game: string) => void;
   onToggleBackup: (game: string) => void;
   gameSizes?: Record<string, number>;
+  gameUpdates?: Record<string, number>;
   loadingSizes?: boolean;
   specialGames?: string[];
   hideBackup?: boolean;
@@ -233,6 +263,7 @@ export function GameGrid({
   onToggle,
   onToggleBackup,
   gameSizes = {},
+  gameUpdates = {},
   loadingSizes = false,
   specialGames = [],
   hideBackup = false,
@@ -265,6 +296,10 @@ export function GameGrid({
             }
             isLoadingSizes={loadingSizes}
             hideBackup={hideBackup}
+            lastUpdate={
+              gameUpdates[gameFolderMap[game]?.path || ""] ||
+              gameUpdates[(gameFolderMap[game]?.path || "").toLowerCase()]
+            }
           />
         </motion.div>
       ))}

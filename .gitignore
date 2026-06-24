@@ -25,6 +25,7 @@ dist/
 target/
 dist/
 keys/
+deployment.local.json
 
 # JetBrains IDE
 .idea/
